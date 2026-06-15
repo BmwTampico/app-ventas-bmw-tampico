@@ -1,0 +1,14 @@
+# Solo se versiona el sitio (index.html) y el código de la Edge Function.
+# Se excluyen assets fuente pesados y archivos locales.
+.DS_Store
+.claude/
+*:Zone.Identifier
+
+# Assets fuente (no necesarios para el despliegue)
+*.png
+*.pdf
+*.txt
+amda_b64.js
+*_pages/
+Persona Fisica/
+Personal Moral/
