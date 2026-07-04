@@ -1,0 +1,50 @@
+name: Respaldo diario de datos (ventas)
+
+on:
+  schedule:
+    # 09:00 UTC ≈ 03:00 hora Tampico (CST/CDT). Ajustar si cambia el horario deseado.
+    - cron: '0 9 * * *'
+  workflow_dispatch: {} # permite disparar el respaldo manualmente desde GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exportar datos desde Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          mkdir -p backup_output
+          FECHA=$(date -u +%Y-%m-%d)
+          ARCHIVO="backup_output/respaldo_${FECHA}.json"
+
+          CLIENTS=$(curl -s "$SUPABASE_URL/rest/v1/clients?select=*" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+          PROFILES=$(curl -s "$SUPABASE_URL/rest/v1/profiles?select=*" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+          ACTIVITY=$(curl -s "$SUPABASE_URL/rest/v1/activity_log?select=*" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+
+          jq -n --arg fecha "$FECHA" \
+            --argjson clients "$CLIENTS" \
+            --argjson profiles "$PROFILES" \
+            --argjson activity "$ACTIVITY" \
+            '{generado: $fecha, clients: $clients, profiles: $profiles, activity_log: $activity}' \
+            > "$ARCHIVO"
+
+          echo "Respaldo generado: $ARCHIVO ($(wc -c < "$ARCHIVO") bytes)"
+
+      # IMPORTANTE: el repo de este proyecto es PÚBLICO. El respaldo contiene datos
+      # personales de clientes (RFC, CURP, domicilios), así que NUNCA se comitea al
+      # código. Se sube como "artifact" de Actions: privado, solo visible para quien
+      # tenga acceso al repositorio/organización, y se borra solo tras 90 días.
+      - name: Subir respaldo como artifact privado (no se comitea al repo)
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-ventas-${{ github.run_id }}
+          path: backup_output/*.json
+          retention-days: 90
