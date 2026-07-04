@@ -3676,7 +3676,60 @@ function renderSettings(){
           </div>
         </div>
       </div>
+
+      ${currentUser.role==='administrador' ? `
+      <!-- Respaldo de datos -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:20px">
+        <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(77,143,234,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-light)" stroke-width="2" width="17" height="17"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--white)">Respaldo de Datos</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:1px">Descarga una copia de clientes, usuarios y actividad</div>
+          </div>
+        </div>
+        <div style="padding:22px">
+          <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">
+            Genera un archivo con toda la información actual del sistema (clientes, usuarios y registro de actividad). Guárdalo en un lugar seguro como respaldo adicional.
+          </p>
+          <button class="btn btn-secondary btn-full" onclick="runAsync(this,'Generando respaldo...',downloadFullBackup)" style="display:flex;align-items:center;justify-content:center;gap:8px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Descargar respaldo completo (JSON)
+          </button>
+        </div>
+      </div>` : ''}
     </div>`;
+}
+
+// Genera y descarga un archivo JSON con clientes, usuarios y log de actividad
+// (respaldo manual, complementario al respaldo automático diario).
+async function downloadFullBackup(){
+  if(currentUser.role!=='administrador'){ toast('Solo un administrador puede generar el respaldo','error'); return; }
+  const [{data:clients,error:ce},{data:profiles,error:pe},{data:log,error:le}] = await Promise.all([
+    sb.from('clients').select('*'),
+    sb.from('profiles').select('*'),
+    sb.from('activity_log').select('*').order('created_at',{ascending:false})
+  ]);
+  if(ce||pe||le){ toast('Error al generar el respaldo: '+(ce||pe||le).message,'error'); return; }
+
+  const backup = {
+    generado: new Date().toISOString(),
+    generado_por: currentUser.name,
+    clients, profiles, activity_log: log
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `respaldo_ventas_${fecha}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  logActivity('Descargó un respaldo completo de datos', `${(clients||[]).length} clientes, ${(profiles||[]).length} usuarios`);
+  toast('Respaldo descargado correctamente');
 }
 
 // Alterna mostrar/ocultar el valor de un campo de contraseña en Configuración,
