@@ -62,6 +62,15 @@ Deno.serve(async (req) => {
 
     const { action, email, password } = await req.json()
 
+    // Un gerente no puede gestionar (eliminar / resetear contraseña de) cuentas de administrador.
+    if ((action === 'delete' || action === 'resetPassword') && profile.role === 'gerente' && email) {
+      const { data: target } = await admin
+        .from('profiles').select('role').eq('email', email).maybeSingle()
+      if (target?.role === 'administrador') {
+        return json({ error: 'Un gerente no puede gestionar cuentas de administrador' }, 403)
+      }
+    }
+
     if (action === 'create') {
       if (!email || !password) return json({ error: 'Faltan datos (correo/contraseña)' }, 400)
       const { data, error } = await admin.auth.admin.createUser({
