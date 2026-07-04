@@ -1707,6 +1707,22 @@ async function saveClient(e, existingId){
     fuente:g('f-fuente'), vecesCompra:g('f-veces-compra'),
   });
 
+  // Aviso de posible cliente duplicado por RFC (revisa en todo el sistema, no solo los propios)
+  const rfcVal = (client.tipo==='fisica' ? client.rfc : client.rfcMoral) || '';
+  if(rfcVal){
+    const { data: dup } = await sb.rpc('client_rfc_exists', { p_rfc: rfcVal, p_exclude: existingId || null });
+    if(dup && dup.exists){
+      const ok = await confirmAsync({
+        title: 'Cliente posiblemente duplicado',
+        message: `Ya existe un cliente registrado con el RFC <strong>${rfcVal}</strong>${dup.vendedor?` (vendedor: ${dup.vendedor})`:''}.<br><br>¿Deseas registrarlo de todos modos?`,
+        confirmLabel: 'Registrar de todos modos',
+        cancelLabel: 'Cancelar',
+        danger: true
+      });
+      if(!ok) return; // el finally re-habilita el botón
+    }
+  }
+
   const nombreLog = client.tipo==='fisica'?(client.nombres+' '+client.apellidoPaterno+' '+client.apellidoMaterno):client.razonSocial;
   if(existingId){
     const prev = cache.clients.find(c=>c.id===existingId) || {};
@@ -3393,9 +3409,18 @@ function confirmDeleteUser(userId){
 // CONFIRM MODAL (genérico, reemplaza confirm() nativo)
 // ============================================================
 let _confirmModalCallback = null;
+let _confirmModalCancelCallback = null;
 
-function showConfirmModal({title='¿Estás seguro?', message='', confirmLabel='Confirmar', cancelLabel='Cancelar', danger=false, onConfirm=null}){
+// Envuelve showConfirmModal en una promesa: resuelve true si confirma, false si cancela.
+function confirmAsync(opts){
+  return new Promise(resolve=>{
+    showConfirmModal({ ...opts, onConfirm:()=>resolve(true), onCancel:()=>resolve(false) });
+  });
+}
+
+function showConfirmModal({title='¿Estás seguro?', message='', confirmLabel='Confirmar', cancelLabel='Cancelar', danger=false, onConfirm=null, onCancel=null}){
   _confirmModalCallback = onConfirm;
+  _confirmModalCancelCallback = onCancel;
   let overlay = document.getElementById('confirm-modal-overlay');
   if(!overlay){
     overlay = document.createElement('div');
@@ -3428,14 +3453,20 @@ function showConfirmModal({title='¿Estás seguro?', message='', confirmLabel='C
 
 function _runConfirmModalCallback(){
   const cb = _confirmModalCallback;
-  closeConfirmModal();
+  _confirmModalCallback = null;
+  _confirmModalCancelCallback = null; // evita que se dispare también el callback de cancelar
+  const overlay = document.getElementById('confirm-modal-overlay');
+  if(overlay) overlay.classList.remove('open');
   if(typeof cb === 'function') cb();
 }
 
 function closeConfirmModal(){
   const overlay = document.getElementById('confirm-modal-overlay');
   if(overlay) overlay.classList.remove('open');
+  const cancelCb = _confirmModalCancelCallback;
   _confirmModalCallback = null;
+  _confirmModalCancelCallback = null;
+  if(typeof cancelCb === 'function') cancelCb();
 }
 
 function openReassignBeforeDelete(u, cnt, users){
