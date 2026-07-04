@@ -1712,9 +1712,13 @@ async function saveClient(e, existingId){
   if(rfcVal){
     const { data: dup } = await sb.rpc('client_rfc_exists', { p_rfc: rfcVal, p_exclude: existingId || null });
     if(dup && dup.exists){
+      const esPropio = dup.vendedor_id && currentUser.id && dup.vendedor_id === currentUser.id;
+      const msg = esPropio
+        ? `Ya existe en <strong>tu listado de clientes</strong> un registro con el RFC <strong>${rfcVal}</strong>.<br><br>¿Deseas registrarlo de todos modos?`
+        : `El RFC <strong>${rfcVal}</strong> ya está registrado a nombre de <strong>otro vendedor${dup.vendedor?`: ${dup.vendedor}`:''}</strong>, por eso <strong>no aparece en tu listado</strong>.<br><br>¿Deseas registrarlo de todos modos?`;
       const ok = await confirmAsync({
         title: 'Cliente posiblemente duplicado',
-        message: `Ya existe un cliente registrado con el RFC <strong>${rfcVal}</strong>${dup.vendedor?` (vendedor: ${dup.vendedor})`:''}.<br><br>¿Deseas registrarlo de todos modos?`,
+        message: msg,
         confirmLabel: 'Registrar de todos modos',
         cancelLabel: 'Cancelar',
         danger: true
