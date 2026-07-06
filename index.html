@@ -246,6 +246,7 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .toast.toast-enter{transform:translateX(120%);opacity:0}
 .toast.leaving{transform:translateX(120%);opacity:0}
 .toast span{flex:1;line-height:1.4}
+.toast-action{flex-shrink:0;background:transparent;border:none;color:var(--blue-light);font-weight:700;font-size:13px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background-color .15s ease-out}
 .toast-close{flex-shrink:0;background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s ease-out,background-color .15s ease-out}
 .toast.success{border-color:#166534}
 .toast.error{border-color:#7f1d1d}
@@ -341,6 +342,7 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
   .doc-card:hover{border-color:var(--blue)}
   .modal-close:hover{color:var(--text);background:var(--border)}
   .toast-close:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .toast-action:hover{background:rgba(77,143,234,.15)}
   .back-btn:hover{border-color:var(--blue);color:var(--blue-light)}
 }
 </style>
@@ -878,7 +880,11 @@ function runWithLoading(btn, loadingLabel, fn){
   }, 30);
 }
 
-function toast(msg, type='success'){
+// `opts.actionLabel` + `opts.onAction` agregan un botón dentro del toast
+// (ej. "Deshacer") para revertir la acción sin bloquear el flujo con un
+// modal — solo aparece si algo salió mal, y no exige ninguna decisión si
+// todo estuvo bien (el toast se autodescarta solo).
+function toast(msg, type='success', opts={}){
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className='toast '+(type==='success'?'success':'error');
@@ -886,11 +892,13 @@ function toast(msg, type='success'){
   const icon = type==='success'
     ? '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>'
     : '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-  t.innerHTML = icon + '<span>'+msg+'</span><button class="toast-close" aria-label="Cerrar notificación">&times;</button>';
+  const actionBtn = opts.actionLabel ? `<button class="toast-action">${opts.actionLabel}</button>` : '';
+  t.innerHTML = icon + '<span>'+msg+'</span>' + actionBtn + '<button class="toast-close" aria-label="Cerrar notificación">&times;</button>';
 
-  // Los errores permanecen más tiempo visibles, ya que suelen requerir
-  // que el usuario lea y entienda qué salió mal antes de continuar.
-  const duration = type==='success' ? 3200 : 6500;
+  // Los errores (y los toasts con acción, ej. "Deshacer") permanecen más
+  // tiempo visibles, ya que requieren que el usuario lea y decida antes de
+  // que se pierda la oportunidad de actuar.
+  const duration = opts.duration || (opts.actionLabel ? 6000 : (type==='success' ? 3200 : 6500));
   let dismissTimer = null;
   const startDismiss = ()=>{
     dismissTimer = setTimeout(()=>{
@@ -905,6 +913,9 @@ function toast(msg, type='success'){
     setTimeout(()=>t.remove(), 300);
   };
 
+  if(opts.actionLabel && opts.onAction){
+    t.querySelector('.toast-action').onclick = ()=>{ opts.onAction(); closeNow(); };
+  }
   t.querySelector('.toast-close').onclick = closeNow;
   // Pausa el cierre automático mientras el usuario lee/interactúa con el toast
   t.addEventListener('mouseenter', cancelDismiss);
@@ -2118,6 +2129,12 @@ function markPrinted(docIds, clientId){
       .then(({error})=>{ if(error) console.error('markPrinted:', error.message); });
     const clientName = client.tipo==='fisica'?`${client.nombres} ${client.apellidoPaterno} ${client.apellidoMaterno}`:client.razonSocial;
     logActivity('Generó/imprimió documento(s)', `${docIds.length} documento(s) para ${clientName}`);
+    // Toast no bloqueante con "Deshacer": si todo salió bien no exige nada
+    // (se autodescarta), pero da una salida inmediata si hubo un problema
+    // al imprimir (atasco, PDF mal generado, etc.) sin tener que editar
+    // los datos del cliente para recuperar el documento.
+    const msg = docIds.length>1 ? `${docIds.length} documentos enviados a imprimir · se ocultaron de la lista` : 'Documento enviado a imprimir · se ocultó de la lista';
+    toast(msg, 'success', { actionLabel:'Deshacer', onAction:()=>undoMarkPrinted(docIds, clientId) });
   }
   // Retira las tarjetas de la vista con una animación breve; si ya no queda
   // ninguna, se vuelve a dibujar la vista para mostrar el estado vacío.
@@ -2128,11 +2145,30 @@ function markPrinted(docIds, clientId){
     removedAny = true;
     card.style.transition='opacity .3s'; card.style.opacity='0';
     setTimeout(()=>{
+      // Si se pulsó "Deshacer" antes de que terminara la animación, el
+      // documento ya no está oculto — no lo removemos (evita deshacer el
+      // "Deshacer" por una condición de carrera).
+      if(!client._hidden || !client._hidden.includes(id)){ card.style.opacity='1'; return; }
       card.remove();
       if(!document.querySelector('.docs-grid .doc-card')) navigate('documents',{clientId});
     },300);
   });
   if(!removedAny && currentView==='documents') navigate('documents',{clientId});
+}
+
+// Revierte markPrinted: quita los documentos de "impreso"/"oculto" para que
+// vuelvan a aparecer en la lista sin tener que editar los datos del cliente.
+async function undoMarkPrinted(docIds, clientId){
+  const client = cache.clients.find(c=>c.id===clientId);
+  if(!client) return;
+  client._printed = (client._printed||[]).filter(id=>!docIds.includes(id));
+  client._hidden = (client._hidden||[]).filter(id=>!docIds.includes(id));
+  const { error } = await sb.from('clients').update({ printed_docs: client._printed, hidden_docs: client._hidden }).eq('id', clientId);
+  if(error){ toast('Error al deshacer: '+error.message,'error'); return; }
+  const clientName = client.tipo==='fisica'?`${client.nombres} ${client.apellidoPaterno} ${client.apellidoMaterno}`:client.razonSocial;
+  logActivity('Deshizo la impresión de documento(s)', `${docIds.length} documento(s) para ${clientName}`);
+  if(currentView==='documents') navigate('documents',{clientId});
+  toast('Documento(s) restaurado(s) a la lista');
 }
 
 async function printDoc(docId, clientId){
