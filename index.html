@@ -2102,6 +2102,12 @@ function ensureTemplates(){
   return _templatesPromise;
 }
 
+// Contexto del documento/cliente actualmente en el modal, para que
+// printModal() sepa qué marcar como impreso justo cuando de verdad se envía
+// a la impresora (no antes) — evita el toast/ocultamiento prematuro si el
+// usuario solo está viendo la vista previa y aún no imprime.
+let _modalPrintContext = null;
+
 async function previewDoc(docId, clientId){
   const clients = DB.get('ap_clients')||[];
   const c = clients.find(x=>x.id===clientId);
@@ -2111,6 +2117,7 @@ async function previewDoc(docId, clientId){
   document.getElementById('modal-title').textContent = docTitle(docId);
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-overlay').classList.add('open');
+  _modalPrintContext = { clientId, docIds: [docId] };
   // increment count
   const _dm1=DB.get('ap_docs_count')||{}; _dm1[currentUser.id]=(_dm1[currentUser.id]||0)+1; DB.set('ap_docs_count',_dm1);
 }
@@ -2175,16 +2182,13 @@ async function undoMarkPrinted(docIds, clientId){
 }
 
 async function printDoc(docId, clientId){
-  const clients = DB.get('ap_clients')||[];
-  const c = clients.find(x=>x.id===clientId);
-  if(!c) return;
-  try{ await ensureTemplates(); }catch(e){ toast('No se pudieron cargar las plantillas de documentos. Revisa tu conexión.','error'); return; }
-  await previewDoc(docId, clientId);
   // La ventana de impresión se abre con el botón "Imprimir / PDF" dentro del
   // modal (clic directo del usuario) — abrirla automáticamente aquí rompe la
   // "activación de usuario" que exigen los navegadores para window.open, y
-  // algunos bloqueadores de pop-ups la detienen silenciosamente.
-  markPrinted([docId], clientId);
+  // algunos bloqueadores de pop-ups la detienen silenciosamente. El
+  // documento se marca como impreso hasta que printModal() confirma que la
+  // ventana realmente se envió a imprimir (ver _modalPrintContext).
+  await previewDoc(docId, clientId);
 }
 
 async function printSelected(clientId){
@@ -2202,7 +2206,9 @@ async function printSelected(clientId){
   document.getElementById('modal-overlay').classList.add('open');
   const _dm2=DB.get('ap_docs_count')||{}; _dm2[currentUser.id]=(_dm2[currentUser.id]||0)+checkboxes.length; DB.set('ap_docs_count',_dm2);
   const selectedIds = Array.from(checkboxes).map(cb=>cb.value);
-  setTimeout(()=>markPrinted(selectedIds, clientId), 400);
+  // Se marcan como impresos hasta que printModal() confirme que la ventana
+  // realmente se envió a imprimir, no al solo mostrar la vista previa.
+  _modalPrintContext = { clientId, docIds: selectedIds };
 }
 
 function docTitle(id){
@@ -2210,7 +2216,7 @@ function docTitle(id){
   return m[id]||id;
 }
 
-function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); _modalPrintContext = null; }
 function closeModalOutside(e){ if(e.target===document.getElementById('modal-overlay')) closeModal(); }
 function printModal(){
   const content = document.getElementById('modal-body').innerHTML;
@@ -2242,7 +2248,16 @@ function printModal(){
   <body>${content}</body></html>`);
   win.document.close();
   win.focus();
-  setTimeout(()=>{ win.print(); win.close(); },500);
+  setTimeout(()=>{
+    win.print();
+    win.close();
+    // Recién ahora se confirma que se envió a imprimir de verdad — antes de
+    // esto (solo con la vista previa abierta) el documento no se toca.
+    if(_modalPrintContext){
+      markPrinted(_modalPrintContext.docIds, _modalPrintContext.clientId);
+      _modalPrintContext = null;
+    }
+  },500);
 }
 
 // AMDA PF PDF pages (base64 PNG)
