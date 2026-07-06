@@ -54,7 +54,7 @@ body.theme-light .role-gerente  { background: #dcfce7; color: #15803d; }
 body.theme-light .role-vendedor { background: #ffedd5; color: #c2410c; }
 body.theme-light .form-control.valid   { border-color: #16a34a; }
 body.theme-light .form-control.invalid { border-color: #dc2626; }
-body.theme-light select.form-control option { background: #ffffff; }
+body.theme-light select.form-control option { background: var(--card); }
 body.theme-light .stat-card { box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
 body.theme-light .app-header { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 body.theme-light .search-input { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -90,7 +90,7 @@ input,select,textarea{font-family:inherit}
 .btn-secondary{background:var(--border);color:var(--text)}
 .btn-danger{background:#7f1d1d;color:#fca5a5}
 .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border)}
-.btn-sm{padding:7px 14px;font-size:13px}
+.btn-sm{padding:7px 14px;font-size:13px;min-height:44px}
 .btn-full{width:100%}
 .btn-green{background:#166534;color:#86efac}
 .login-error{color:#fca5a5;background:#450a0a;border:1px solid #7f1d1d;border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
@@ -193,7 +193,7 @@ select.form-control option{background:var(--navy)}
 .vehicle-section{background:linear-gradient(135deg,#0d1e35,#112241);border:1px solid #1c4080;border-radius:var(--radius);padding:24px;margin-bottom:20px}
 .vehicle-section h3{color:#60a5fa;font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 body.theme-light .vehicle-section{background:var(--card);border:1px solid var(--border)}
-body.theme-light .vehicle-section h3{color:#1a5fbf}
+body.theme-light .vehicle-section h3{color:var(--blue2)}
 
 /* FORM ACTIONS */
 .form-actions{display:flex;gap:12px;justify-content:flex-end;padding-top:20px;border-top:1px solid var(--border)}
@@ -362,11 +362,11 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
     </div>
     <div id="login-error" class="login-error"></div>
     <div class="form-group">
-      <label>Correo electrónico</label>
+      <label for="inp-user">Correo electrónico</label>
       <input type="email" id="inp-user" class="form-control" placeholder="tucorreo@ejemplo.com" autocomplete="username">
     </div>
     <div class="form-group">
-      <label>Contraseña</label>
+      <label for="recovery-pass">Contraseña</label>
       <div class="pass-wrap">
         <input type="password" id="inp-pass" class="form-control" placeholder="••••••••" autocomplete="current-password">
         <button type="button" class="pass-toggle" onclick="togglePass()" title="Mostrar/ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
@@ -392,11 +392,11 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Ingresa tu nueva contraseña de acceso.</p>
       <div class="form-group">
-        <label>Nueva contraseña</label>
+        <label for="recovery-pass">Nueva contraseña</label>
         <input type="password" id="recovery-pass" class="form-control" placeholder="Mínimo 6 caracteres">
       </div>
       <div class="form-group">
-        <label>Confirmar nueva contraseña</label>
+        <label for="recovery-pass-confirm">Confirmar nueva contraseña</label>
         <input type="password" id="recovery-pass-confirm" class="form-control" placeholder="Repite la nueva contraseña">
       </div>
       <button class="btn btn-primary btn-full" onclick="submitRecoveryPassword()" style="margin-top:8px">Guardar contraseña</button>
@@ -939,11 +939,12 @@ function renderDashboard(){
   const all = DB.get('ap_clients')||[];
 
   let statsHtml = '';
+  const _statCardKb = "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}";
   if(currentUser.role==='vendedor'){
-    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('my-clients')"><div class="stat-val">${clients.length}</div><div class="stat-lbl">Mis Clientes</div></div>`;
+    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('my-clients')" role="button" tabindex="0" aria-label="Ver mis clientes: ${clients.length}" onkeydown="${_statCardKb}"><div class="stat-val">${clients.length}</div><div class="stat-lbl">Mis Clientes</div></div>`;
   } else {
-    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('all-clients')"><div class="stat-val">${all.length}</div><div class="stat-lbl">Total Clientes</div></div>`;
-    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('vendors-list')"><div class="stat-val">${(DB.get('ap_users')||[]).filter(u=>u.role==='vendedor').length}</div><div class="stat-lbl">Vendedores</div></div>`;
+    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('all-clients')" role="button" tabindex="0" aria-label="Ver todos los clientes: ${all.length}" onkeydown="${_statCardKb}"><div class="stat-val">${all.length}</div><div class="stat-lbl">Total Clientes</div></div>`;
+    statsHtml+=`<div class="stat-card" style="cursor:pointer" onclick="navigate('vendors-list')" role="button" tabindex="0" aria-label="Ver vendedores: ${(DB.get('ap_users')||[]).filter(u=>u.role==='vendedor').length}" onkeydown="${_statCardKb}"><div class="stat-val">${(DB.get('ap_users')||[]).filter(u=>u.role==='vendedor').length}</div><div class="stat-lbl">Vendedores</div></div>`;
   }
 
   let clientRows = '';
@@ -1026,7 +1027,7 @@ function liveSearch(q){
     found.slice(0,8).forEach(c=>{
       const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
       const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
-      html+=`<div class="search-item" onclick="navigate('client-detail',{clientId:'${c.id}'})">
+      html+=`<div class="search-item" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div><div class="search-item-name">${name}</div><div class="search-item-sub">${rfc||''} · ${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</div></div>
         <span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'PF':'PM'}</span>
       </div>`;
@@ -1395,15 +1396,15 @@ function renderClientForm(clientId){
           Datos del Vehículo
         </h3>
         <div class="form-grid form-grid-3" style="margin-bottom:16px">
-          <div class="form-group"><label>Marca</label><input class="form-control" id="f-marca" value="${v(client,'vehiculoMarca','BMW')}"></div>
-          <div class="form-group"><label>Modelo</label><input class="form-control" id="f-submarca" placeholder="X3 xDrive30, Serie 3 320i..." value="${v(client,'vehiculoSubmarca','')}"></div>
-          <div class="form-group"><label>Color</label><input class="form-control" id="f-color" value="${v(client,'vehiculoColor','')}"></div>
-          <div class="form-group"><label>Año-Modelo</label><input class="form-control" id="f-anio" placeholder="2026" value="${v(client,'vehiculoAnio','')}"></div>
-          <div class="form-group"><label>VIN / No. de Serie</label><input class="form-control" id="f-niv" placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
-          <div class="form-group"><label>No. de Motor</label><input class="form-control" id="f-motor" value="${v(client,'vehiculoMotor','')}"></div>
-          <div class="form-group"><label>Capacidad</label><input class="form-control" id="f-capacidad" placeholder="5 personas" value="${v(client,'vehiculoCapacidad','')}"></div>
-          <div class="form-group"><label>Precio de Lista</label><input class="form-control" id="f-precio" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
-          <div class="form-group"><label>Forma de Pago</label>
+          <div class="form-group"><label for="f-marca">Marca</label><input class="form-control" id="f-marca" value="${v(client,'vehiculoMarca','BMW')}"></div>
+          <div class="form-group"><label for="f-submarca">Modelo</label><input class="form-control" id="f-submarca" placeholder="X3 xDrive30, Serie 3 320i..." value="${v(client,'vehiculoSubmarca','')}"></div>
+          <div class="form-group"><label for="f-color">Color</label><input class="form-control" id="f-color" value="${v(client,'vehiculoColor','')}"></div>
+          <div class="form-group"><label for="f-anio">Año-Modelo</label><input class="form-control" id="f-anio" placeholder="2026" value="${v(client,'vehiculoAnio','')}"></div>
+          <div class="form-group"><label for="f-niv">VIN / No. de Serie</label><input class="form-control" id="f-niv" placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
+          <div class="form-group"><label for="f-motor">No. de Motor</label><input class="form-control" id="f-motor" value="${v(client,'vehiculoMotor','')}"></div>
+          <div class="form-group"><label for="f-capacidad">Capacidad</label><input class="form-control" id="f-capacidad" placeholder="5 personas" value="${v(client,'vehiculoCapacidad','')}"></div>
+          <div class="form-group"><label for="f-precio">Precio de Lista</label><input class="form-control" id="f-precio" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+          <div class="form-group"><label for="f-pago">Forma de Pago</label>
             <select class="form-control" id="f-pago">
               <option value="contado"        ${v(client,'formaPago','contado')==='contado'?'selected':''}>Contado</option>
               <option value="financiera_bmw" ${v(client,'formaPago','contado')==='financiera_bmw'?'selected':''}>Financiera BMW</option>
@@ -1411,8 +1412,8 @@ function renderClientForm(clientId){
               <option value="transferencia"  ${v(client,'formaPago','contado')==='transferencia'?'selected':''}>Transferencia</option>
             </select>
           </div>
-          <div class="form-group"><label>Fecha de Entrega</label><input class="form-control" id="f-fecha-ent" type="date" value="${v(client,'vehiculoFechaEntrega','')}"></div>
-          <div class="form-group"><label>Lugar de Entrega</label><input class="form-control" id="f-lugar-ent" value="${v(client,'vehiculoLugar','Tampico')}"></div>
+          <div class="form-group"><label for="f-fecha-ent">Fecha de Entrega</label><input class="form-control" id="f-fecha-ent" type="date" value="${v(client,'vehiculoFechaEntrega','')}"></div>
+          <div class="form-group"><label for="f-lugar-ent">Lugar de Entrega</label><input class="form-control" id="f-lugar-ent" value="${v(client,'vehiculoLugar','Tampico')}"></div>
 
         </div>
       </div><!-- end vehicle-section -->
@@ -1420,18 +1421,18 @@ function renderClientForm(clientId){
       <!-- ── reinicia vehicle-section para finanzas ── -->
       <div class="vehicle-section" style="margin-top:20px">
         <div class="form-grid form-grid-3" style="margin-top:0;padding-top:0;border-top:none">
-          <div class="form-group"><label>FSOS</label><input class="form-control" id="f-fsos" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'fsos',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
-          <div class="form-group"><label>Descuento</label><input class="form-control" id="f-descuento" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'descuento',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
-          <div class="form-group"><label>Monto Total <span style="font-size:11px;color:var(--blue-light);text-transform:none;letter-spacing:0">(automático)</span></label><input class="form-control valid" id="f-subvencion" type="text" readonly style="background:var(--navy2);cursor:default" value="${fmtCurrencyVal(v(client,'subvencion',''))}"></div>
+          <div class="form-group"><label for="f-fsos">FSOS</label><input class="form-control" id="f-fsos" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'fsos',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+          <div class="form-group"><label for="f-descuento">Descuento</label><input class="form-control" id="f-descuento" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'descuento',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+          <div class="form-group"><label for="f-subvencion">Monto Total <span style="font-size:11px;color:var(--blue-light);text-transform:none;letter-spacing:0">(automático)</span></label><input class="form-control valid" id="f-subvencion" type="text" readonly style="background:var(--navy2);cursor:default" value="${fmtCurrencyVal(v(client,'subvencion',''))}"></div>
         </div>
         <div class="form-grid form-grid-2" style="margin-top:16px;padding-top:16px;border-top:1px solid #1c4080">
-          <div class="form-group"><label>Fuente de Contacto</label>
+          <div class="form-group"><label for="f-fuente">Fuente de Contacto</label>
             <select class="form-control" id="f-fuente">
               <option value="">— Seleccionar —</option>
               ${['Piso','Prensa','Radio','Telemarketing','Referido','Internet','Otro'].map(o=>`<option value="${o}" ${v(client,'fuente')===o?'selected':''}>${o}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group"><label>¿Cuántas veces ha comprado con nosotros?</label>
+          <div class="form-group"><label for="f-veces-compra">¿Cuántas veces ha comprado con nosotros?</label>
             <select class="form-control" id="f-veces-compra">
               <option value="">— Seleccionar —</option>
               ${['Primera vez','Segunda vez','Más de 2 veces'].map(o=>`<option value="${o}" ${v(client,'vecesCompra')===o?'selected':''}>${o}</option>`).join('')}
@@ -1447,13 +1448,13 @@ function renderClientForm(clientId){
           Datos de Entrega
         </h3>
         <div class="form-grid form-grid-3">
-          <div class="form-group"><label>Fecha de Salida</label><input class="form-control" id="f-fecha-salida" type="date" value="${v(client,'entregaFechaSalida','')}"></div>
-          <div class="form-group"><label>Hora de Salida</label><input class="form-control" id="f-hora-salida" type="time" value="${v(client,'entregaHoraSalida','')}"></div>
-          <div class="form-group"><label>No. de Folio</label><input class="form-control" id="f-folio" value="${v(client,'entregaFolio','')}"></div>
-          <div class="form-group"><label>No. de Factura</label><input class="form-control" id="f-no-factura" value="${v(client,'entregaNoFactura','')}"></div>
-          <div class="form-group"><label>No. de Orden</label><input class="form-control" id="f-no-orden" value="${v(client,'entregaNoOrden','')}"></div>
-          <div class="form-group"><label>Placas</label><input class="form-control" id="f-placas" value="${v(client,'entregaPlacas','')}"></div>
-          <div class="form-group" style="grid-column:span 3"><label>Observaciones Entrega</label><textarea class="form-control" id="f-obs-entrega" rows="2">${v(client,'entregaObservaciones','')}</textarea></div>
+          <div class="form-group"><label for="f-fecha-salida">Fecha de Salida</label><input class="form-control" id="f-fecha-salida" type="date" value="${v(client,'entregaFechaSalida','')}"></div>
+          <div class="form-group"><label for="f-hora-salida">Hora de Salida</label><input class="form-control" id="f-hora-salida" type="time" value="${v(client,'entregaHoraSalida','')}"></div>
+          <div class="form-group"><label for="f-folio">No. de Folio</label><input class="form-control" id="f-folio" value="${v(client,'entregaFolio','')}"></div>
+          <div class="form-group"><label for="f-no-factura">No. de Factura</label><input class="form-control" id="f-no-factura" value="${v(client,'entregaNoFactura','')}"></div>
+          <div class="form-group"><label for="f-no-orden">No. de Orden</label><input class="form-control" id="f-no-orden" value="${v(client,'entregaNoOrden','')}"></div>
+          <div class="form-group"><label for="f-placas">Placas</label><input class="form-control" id="f-placas" value="${v(client,'entregaPlacas','')}"></div>
+          <div class="form-group" style="grid-column:span 3"><label for="f-obs-entrega">Observaciones Entrega</label><textarea class="form-control" id="f-obs-entrega" rows="2">${v(client,'entregaObservaciones','')}</textarea></div>
         </div>
       </div>
 
@@ -1496,47 +1497,47 @@ function buildFisicaFields(c){
   <div class="form-card">
     <h3>Datos Personales</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label>Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-nombres" required value="${pv('nombres')}"><div class="field-error" id="e-nombres">Campo requerido</div></div>
-      <div class="form-group"><label>Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-appaterno" required value="${pv('apellidoPaterno')}"></div>
-      <div class="form-group"><label>Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-apmaterno" required value="${pv('apellidoMaterno')}"></div>
-      <div class="form-group"><label>Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-fnac" type="date" required value="${v(c,'fechaNacimiento')}"></div>
-      <div class="form-group"><label>País de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-pnac" value="${v(c,'paisNacimiento','México')}"></div>
-      <div class="form-group"><label>País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac2" value="${v(c,'paisNacionalidad','México')}"></div>
-      <div class="form-group"><label>CURP <span class="req">*</span></label><input class="form-control" id="f-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'curp')}"><div class="field-error" id="e-curp"></div><div class="field-ok" id="ok-curp">✓ CURP válido</div></div>
-      <div class="form-group"><label>RFC <span class="req">*</span></label><input class="form-control" id="f-rfc" required maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'rfc')}"><div class="field-error" id="e-rfc"></div><div class="field-ok" id="ok-rfc">✓ RFC válido</div></div>
-      <div class="form-group"><label>Actividad / Ocupación</label><input class="form-control" id="f-actividad" value="${v(c,'actividad')}"></div>
-      <div class="form-group"><label>CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
+      <div class="form-group"><label for="f-nombres">Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-nombres" required value="${pv('nombres')}"><div class="field-error" id="e-nombres">Campo requerido</div></div>
+      <div class="form-group"><label for="f-appaterno">Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-appaterno" required value="${pv('apellidoPaterno')}"></div>
+      <div class="form-group"><label for="f-apmaterno">Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-apmaterno" required value="${pv('apellidoMaterno')}"></div>
+      <div class="form-group"><label for="f-fnac">Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-fnac" type="date" required value="${v(c,'fechaNacimiento')}"></div>
+      <div class="form-group"><label for="f-pnac">País de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-pnac" value="${v(c,'paisNacimiento','México')}"></div>
+      <div class="form-group"><label for="f-pnac2">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac2" value="${v(c,'paisNacionalidad','México')}"></div>
+      <div class="form-group"><label for="f-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'curp')}"><div class="field-error" id="e-curp"></div><div class="field-ok" id="ok-curp">✓ CURP válido</div></div>
+      <div class="form-group"><label for="f-rfc">RFC <span class="req">*</span></label><input class="form-control" id="f-rfc" required maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'rfc')}"><div class="field-error" id="e-rfc"></div><div class="field-ok" id="ok-rfc">✓ RFC válido</div></div>
+      <div class="form-group"><label for="f-actividad">Actividad / Ocupación</label><input class="form-control" id="f-actividad" value="${v(c,'actividad')}"></div>
+      <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
     </div>
   </div>
   <div class="form-card">
     <h3>Domicilio</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group" style="grid-column:span 2"><label>Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
-      <div class="form-group"><label>Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
-      <div class="form-group"><label>Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
-      <div class="form-group"><label>Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
-      <div class="form-group"><label>Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
-      <div class="form-group"><label>Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
-      <div class="form-group"><label>Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
-      <div class="form-group"><label>Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
-      <div class="form-group"><label>País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
+      <div class="form-group" style="grid-column:span 2"><label for="f-calle">Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
+      <div class="form-group"><label for="f-colonia">Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
+      <div class="form-group"><label for="f-numext">Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
+      <div class="form-group"><label for="f-numint">Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
+      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
+      <div class="form-group"><label for="f-municipio">Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
+      <div class="form-group"><label for="f-ciudad">Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
+      <div class="form-group"><label for="f-estado">Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
+      <div class="form-group"><label for="f-pais">País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
     </div>
   </div>
   <div class="form-card">
     <h3>Contacto e Identificación</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label>Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
-      <div class="form-group"><label>Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
-      <div class="form-group"><label>Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
-      <div class="form-group"><label>Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
-      <div class="form-group"><label>Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
-      <div class="form-group"><label>Identificación Oficial</label>
+      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
+      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
+      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
+      <div class="form-group"><label for="f-ext">Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
+      <div class="form-group"><label for="f-correo">Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
+      <div class="form-group"><label for="f-id-nombre">Identificación Oficial</label>
         <select class="form-control" id="f-id-nombre">
           ${['INE/IFE','Pasaporte','Cédula Profesional','FM2/FM3','Otro'].map(o=>`<option ${v(c,'idNombre')===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Autoridad que la Emite</label><input class="form-control" id="f-id-aut" value="${v(c,'idAutoridad')}"></div>
-      <div class="form-group"><label>Número o Folio</label><input class="form-control" id="f-id-folio" value="${v(c,'idFolio')}"></div>
+      <div class="form-group"><label for="f-id-aut">Autoridad que la Emite</label><input class="form-control" id="f-id-aut" value="${v(c,'idAutoridad')}"></div>
+      <div class="form-group"><label for="f-id-folio">Número o Folio</label><input class="form-control" id="f-id-folio" value="${v(c,'idFolio')}"></div>
     </div>
   </div>
   `;
@@ -1549,54 +1550,54 @@ function buildMoralFields(c){
   <div class="form-card">
     <h3>Datos de la Empresa</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group" style="grid-column:span 2"><label>Denominación o Razón Social <span class="req">*</span></label><input class="form-control" id="f-razon" required value="${pv('razonSocial')}"></div>
-      <div class="form-group"><label>RFC <span class="req">*</span></label><input class="form-control" id="f-rfc-moral" required maxlength="12" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCMoral(this)" value="${v(c,'rfcMoral')}"><div class="field-error" id="e-rfc-moral"></div><div class="field-ok" id="ok-rfc-moral">✓ RFC válido</div></div>
-      <div class="form-group"><label>Fecha de Constitución <span class="req">*</span></label><input class="form-control" id="f-fconst" type="date" required value="${v(c,'fechaConstitucion')}"></div>
-      <div class="form-group"><label>País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac-moral" value="${v(c,'paisNacionalidad','México')}"></div>
-      <div class="form-group"><label>Actividad / Giro Mercantil <span class="req">*</span></label><input class="form-control" id="f-giro" required value="${v(c,'gireMercantil')}"></div>
-      <div class="form-group"><label>CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
+      <div class="form-group" style="grid-column:span 2"><label for="f-razon">Denominación o Razón Social <span class="req">*</span></label><input class="form-control" id="f-razon" required value="${pv('razonSocial')}"></div>
+      <div class="form-group"><label for="f-rfc-moral">RFC <span class="req">*</span></label><input class="form-control" id="f-rfc-moral" required maxlength="12" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCMoral(this)" value="${v(c,'rfcMoral')}"><div class="field-error" id="e-rfc-moral"></div><div class="field-ok" id="ok-rfc-moral">✓ RFC válido</div></div>
+      <div class="form-group"><label for="f-fconst">Fecha de Constitución <span class="req">*</span></label><input class="form-control" id="f-fconst" type="date" required value="${v(c,'fechaConstitucion')}"></div>
+      <div class="form-group"><label for="f-pnac-moral">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac-moral" value="${v(c,'paisNacionalidad','México')}"></div>
+      <div class="form-group"><label for="f-giro">Actividad / Giro Mercantil <span class="req">*</span></label><input class="form-control" id="f-giro" required value="${v(c,'gireMercantil')}"></div>
+      <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
     </div>
   </div>
   <div class="form-card">
     <h3>Domicilio de la Empresa</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group" style="grid-column:span 2"><label>Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
-      <div class="form-group"><label>Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
-      <div class="form-group"><label>Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
-      <div class="form-group"><label>Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
-      <div class="form-group"><label>Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
-      <div class="form-group"><label>Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
-      <div class="form-group"><label>Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
-      <div class="form-group"><label>Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
-      <div class="form-group"><label>País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
+      <div class="form-group" style="grid-column:span 2"><label for="f-calle">Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
+      <div class="form-group"><label for="f-colonia">Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
+      <div class="form-group"><label for="f-numext">Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
+      <div class="form-group"><label for="f-numint">Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
+      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
+      <div class="form-group"><label for="f-municipio">Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
+      <div class="form-group"><label for="f-ciudad">Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
+      <div class="form-group"><label for="f-estado">Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
+      <div class="form-group"><label for="f-pais">País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
     </div>
   </div>
   <div class="form-card">
     <h3>Contacto</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label>Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
-      <div class="form-group"><label>Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
-      <div class="form-group"><label>Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
-      <div class="form-group"><label>Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
-      <div class="form-group"><label>Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
+      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
+      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
+      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
+      <div class="form-group"><label for="f-ext">Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
+      <div class="form-group"><label for="f-correo">Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
     </div>
   </div>
   <div class="form-card">
     <h3>Representante Legal</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label>Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-rep-nombres" required value="${v(c,'repNombres')}"></div>
-      <div class="form-group"><label>Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-rep-pat" required value="${v(c,'repApellidoPaterno')}"></div>
-      <div class="form-group"><label>Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-rep-mat" required value="${v(c,'repApellidoMaterno')}"></div>
-      <div class="form-group"><label>Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-rep-fnac" type="date" required value="${v(c,'repFechaNacimiento')}"></div>
-      <div class="form-group"><label>CURP <span class="req">*</span></label><input class="form-control" id="f-rep-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'repCurp')}"><div class="field-error" id="e-rep-curp"></div><div class="field-ok" id="ok-rep-curp">✓ CURP válido</div></div>
-      <div class="form-group"><label>RFC del Representante</label><input class="form-control" id="f-rep-rfc" maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'repRfc')}"><div class="field-error" id="e-rep-rfc"></div><div class="field-ok" id="ok-rep-rfc">✓ RFC válido</div></div>
-      <div class="form-group"><label>Identificación Oficial</label>
+      <div class="form-group"><label for="f-rep-nombres">Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-rep-nombres" required value="${v(c,'repNombres')}"></div>
+      <div class="form-group"><label for="f-rep-pat">Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-rep-pat" required value="${v(c,'repApellidoPaterno')}"></div>
+      <div class="form-group"><label for="f-rep-mat">Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-rep-mat" required value="${v(c,'repApellidoMaterno')}"></div>
+      <div class="form-group"><label for="f-rep-fnac">Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-rep-fnac" type="date" required value="${v(c,'repFechaNacimiento')}"></div>
+      <div class="form-group"><label for="f-rep-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-rep-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'repCurp')}"><div class="field-error" id="e-rep-curp"></div><div class="field-ok" id="ok-rep-curp">✓ CURP válido</div></div>
+      <div class="form-group"><label for="f-rep-rfc">RFC del Representante</label><input class="form-control" id="f-rep-rfc" maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'repRfc')}"><div class="field-error" id="e-rep-rfc"></div><div class="field-ok" id="ok-rep-rfc">✓ RFC válido</div></div>
+      <div class="form-group"><label for="f-rep-id-nombre">Identificación Oficial</label>
         <select class="form-control" id="f-rep-id-nombre">
           ${['INE/IFE','Pasaporte','Cédula Profesional','FM2/FM3','Otro'].map(o=>`<option ${v(c,'repIdNombre')===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>Autoridad que la Emite</label><input class="form-control" id="f-rep-id-aut" value="${v(c,'repIdAutoridad')}"></div>
-      <div class="form-group"><label>Número o Folio</label><input class="form-control" id="f-rep-id-folio" value="${v(c,'repIdFolio')}"></div>
+      <div class="form-group"><label for="f-rep-id-aut">Autoridad que la Emite</label><input class="form-control" id="f-rep-id-aut" value="${v(c,'repIdAutoridad')}"></div>
+      <div class="form-group"><label for="f-rep-id-folio">Número o Folio</label><input class="form-control" id="f-rep-id-folio" value="${v(c,'repIdFolio')}"></div>
     </div>
   </div>
   `;
@@ -2411,7 +2412,7 @@ function buildDocHtml(docId, c){
         .ent-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="ent-wrapper"><div class="ent-page">
-        <img src="data:image/png;base64,${ENTREGAS_BG}">
+        <img src="data:image/png;base64,${ENTREGAS_BG}" alt="">
         ${ef(1370, 78,  108, todayShort)}
         ${ef(168,  183, 195, fmtDate(c.entregaFechaSalida))}
         ${ef(505,  183, 185, fmtHora(c.entregaHoraSalida))}
@@ -2447,7 +2448,7 @@ function buildDocHtml(docId, c){
       </style>
       <!-- Página 1 -->
       <div class="a1-page">
-        <img src="data:image/png;base64,${A1_PF_P1}">
+        <img src="data:image/png;base64,${A1_PF_P1}" alt="">
         ${fld(143,449,431,nameA1)}
         ${fld(192,467,383,fmtDate(c.fechaNacimiento))}
         ${fld(241,485,333,(c.paisNacimiento||'MÉXICO').toUpperCase())}
@@ -2458,7 +2459,7 @@ function buildDocHtml(docId, c){
       </div>
       <!-- Página 2 -->
       <div class="a1-page">
-        <img src="data:image/png;base64,${A1_PF_P2}">
+        <img src="data:image/png;base64,${A1_PF_P2}" alt="">
         ${fld(54,632,135,'TAMPICO')}
         ${fld(229,632,16,String(day))}
         ${fld(328,632,46,month)}
@@ -2489,7 +2490,7 @@ function buildDocHtml(docId, c){
       </style>
       <div class="a2-wrapper">
         <div class="a2-page">
-          <img src="data:image/png;base64,${A2_PM_P0}">
+          <img src="data:image/png;base64,${A2_PM_P0}" alt="">
           ${af(510,858,690,(c.razonSocial||'').toUpperCase())}
           ${af(456,896,768,fmtFecha(c.fechaConstitucion))}
           ${af(596,934,628,rep)}
@@ -2498,7 +2499,7 @@ function buildDocHtml(docId, c){
           ${af(296,1154,900,(c.email||''))}
         </div>
         <div class="a2-page">
-          <img src="data:image/png;base64,${A2_PM_P1}">
+          <img src="data:image/png;base64,${A2_PM_P1}" alt="">
           ${af(94,1274,310,'Tampico, Tamaulipas')}
           ${af(420,1274,60,String(dayN))}
           ${af(580,1274,160,monthN)}
@@ -2527,7 +2528,7 @@ function buildDocHtml(docId, c){
 
       <!-- Página 1: datos del cliente -->
       <div class="amda-page">
-        <img src="data:image/png;base64,${AMDA_PF_P1}">
+        <img src="data:image/png;base64,${AMDA_PF_P1}" alt="">
         ${field(59,107,230,20,'AUTOPREMIUM TAMPICO')}
         ${field(292,107,243,20,todayShort)}
         ${field(59,162,230,20,(c.nombres||'').toUpperCase())}
@@ -2557,12 +2558,12 @@ function buildDocHtml(docId, c){
 
       <!-- Página 2: cotejo y declaración (sin datos del cliente) -->
       <div class="amda-page">
-        <img src="data:image/png;base64,${AMDA_PF_P2}">
+        <img src="data:image/png;base64,${AMDA_PF_P2}" alt="">
       </div>
 
       <!-- Página 3: documentos y cotejo del beneficiario (sin datos) -->
       <div class="amda-page">
-        <img src="data:image/png;base64,${AMDA_PF_P3}">
+        <img src="data:image/png;base64,${AMDA_PF_P3}" alt="">
       </div>
     </div>`;
   }
@@ -2588,7 +2589,7 @@ function buildDocHtml(docId, c){
       </style>
       <div class="pm-wrapper">
         <div class="pm-page">
-          <img src="data:image/png;base64,${PM_ID_P0}">
+          <img src="data:image/png;base64,${PM_ID_P0}" alt="">
           ${pmf(141,219,440,'AUTOPREMIUM TAMPICO',10)}
           ${pmf(742,219,400,todayShort,10)}
           ${pmf(200,341,750,razSoc,10)}
@@ -2612,9 +2613,9 @@ function buildDocHtml(docId, c){
           ${pmf(751,1098,420,(c.repRfc||'').toUpperCase(),10)}
         </div>
         <div class="pm-page">
-          <img src="data:image/png;base64,${PM_ID_P1}">
+          <img src="data:image/png;base64,${PM_ID_P1}" alt="">
         </div>
-        <div class="pm-page"><img src="data:image/png;base64,${PM_ID_P2}"></div>
+        <div class="pm-page"><img src="data:image/png;base64,${PM_ID_P2}" alt=""></div>
       </div>
     </div>`;
   }
@@ -2643,9 +2644,9 @@ function buildDocHtml(docId, c){
         .cv-page{position:relative;width:612px;height:792px;overflow:hidden;display:block}
         .cv-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P1}"></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P1}" alt=""></div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_CONTADO_P2}">
+        <img src="data:image/png;base64,${CV_CONTADO_P2}" alt="">
         ${fld(488,83,118,todayShort)}
         ${fld(74,165,390,nameCV)}
         ${fld(498,165,110,rfcCV,8)}
@@ -2669,14 +2670,14 @@ function buildDocHtml(docId, c){
         ${fld(526,404,100,precioCV)}
       </div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_CONTADO_P3}">
+        <img src="data:image/png;base64,${CV_CONTADO_P3}" alt="">
         ${fld(277,81,230,nameCV,8)}
       </div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P4}">
+      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P4}" alt="">
         ${fld(390,187,88,rfcCV)}
       </div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P5}"></div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P6}"></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P5}" alt=""></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_CONTADO_P6}" alt=""></div>
     </div>`;
   }
 
@@ -2705,17 +2706,17 @@ function buildDocHtml(docId, c){
         .cv-page{position:relative;width:613px;height:1009px;overflow:hidden;display:block;page-break-after:always}
         .cv-page img,.cv-page-l img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
-      <div class="cv-page-l"><img src="data:image/png;base64,${CV_TASA_P1}"></div>
+      <div class="cv-page-l"><img src="data:image/png;base64,${CV_TASA_P1}" alt=""></div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_TASA_P2}">
+        <img src="data:image/png;base64,${CV_TASA_P2}" alt="">
         ${fld2(476,98,79,dayStr2)}
       </div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_TASA_P3}">
+        <img src="data:image/png;base64,${CV_TASA_P3}" alt="">
         ${fld2(187,42,118,nameCV2,8)}
       </div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_TASA_P4}">
+        <img src="data:image/png;base64,${CV_TASA_P4}" alt="">
         ${fld2(477,98,44,dayStr2,8)}
         ${fld2(200,423,74,( c.vehiculoNIV||'').toUpperCase())}
         ${fld2(109,431,60,'BMW')}
@@ -2729,15 +2730,15 @@ function buildDocHtml(docId, c){
         ${fld2(312,740,100,saldoCV)}
       </div>
       <div class="cv-page">
-        <img src="data:image/png;base64,${CV_TASA_P5}">
+        <img src="data:image/png;base64,${CV_TASA_P5}" alt="">
         ${fld2(165,69,175,'TAMPICO TAMAULIPAS')}
         ${fld2(427,69,10,String(day).padStart(2,'0'))}
         ${fld2(65,80,62,mm2+' de '+year)}
       </div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P6}"></div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P7}"></div>
-      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P8}"></div>
-      <div class="cv-page-l"><img src="data:image/png;base64,${CV_TASA_P9}"></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P6}" alt=""></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P7}" alt=""></div>
+      <div class="cv-page"><img src="data:image/png;base64,${CV_TASA_P8}" alt=""></div>
+      <div class="cv-page-l"><img src="data:image/png;base64,${CV_TASA_P9}" alt=""></div>
     </div>`;
   }
 
@@ -2762,7 +2763,7 @@ function buildDocHtml(docId, c){
         .chk-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="chk-wrapper"><div class="chk-page">
-        <img src="data:image/png;base64,${CHECKLIST_BG}">
+        <img src="data:image/png;base64,${CHECKLIST_BG}" alt="">
         ${cf(615,69,478,nameChk)}
         ${cf(692,94,108,'')}
         ${cf(590,119,504,vendedorChk)}
@@ -2789,7 +2790,7 @@ function buildDocHtml(docId, c){
         .bsi-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="bsi-wrapper"><div class="bsi-page">
-        <img src="data:image/png;base64,${BSI_PLUS_BG}">
+        <img src="data:image/png;base64,${BSI_PLUS_BG}" alt="">
         ${bsif(490,290,660,nameBSI,10)}
       </div></div>
     </div>`;
@@ -2813,9 +2814,9 @@ function buildDocHtml(docId, c){
         .ap-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="ap-wrapper">
-        <div class="ap-page"><img src="data:image/png;base64,${AVISO_PRIV_P0}"></div>
+        <div class="ap-page"><img src="data:image/png;base64,${AVISO_PRIV_P0}" alt=""></div>
         <div class="ap-page">
-          <img src="data:image/png;base64,${AVISO_PRIV_P1}">
+          <img src="data:image/png;base64,${AVISO_PRIV_P1}" alt="">
           ${apf(197,1022,530,nameAP)}
           ${apf(178,1060,220,todayShort)}
         </div>
@@ -2840,7 +2841,7 @@ function buildDocHtml(docId, c){
         .ef-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="ef-wrapper"><div class="ef-page">
-        <img src="data:image/png;base64,${ENTREGA_FINAL_BG}">
+        <img src="data:image/png;base64,${ENTREGA_FINAL_BG}" alt="">
         ${eff(840,75,140,todayShort,9)}
         ${eff(165,100,400,'AUTOPREMIUM TAMPICO')}
         ${eff(120,140,350,modeloEF)}
@@ -2868,7 +2869,7 @@ function buildDocHtml(docId, c){
         .eu-page img{position:absolute;top:0;left:0;width:100%;height:100%}
       </style>
       <div class="eu-wrapper"><div class="eu-page">
-        <img src="data:image/png;base64,${ENTREGA_UNIDAD_BG}">
+        <img src="data:image/png;base64,${ENTREGA_UNIDAD_BG}" alt="">
         ${ef2(600,112,140,todayShort,9)}
         ${ef2(580,158,100,String(c.vehiculoAnio||''),9)}
         ${ef2(120,132,340,'AUTOPREMIUM TAMPICO')}
@@ -3163,7 +3164,7 @@ function roleSelectorHtml(selectedRole, idPrefix){
   if(currentUser.role!=='administrador') roles = roles.filter(r=>r.id!=='administrador');
   return `<div style="display:grid;grid-template-columns:repeat(${roles.length},1fr);gap:10px">
     ${roles.map(r=>`
-      <label style="cursor:pointer">
+      <label for="new-user-name" style="cursor:pointer">
         <input type="radio" name="${idPrefix}-role" value="${r.id}" ${r.id===selectedRole?'checked':''} style="display:none" onchange="updateRoleSelection('${idPrefix}')">
         <div id="${idPrefix}-role-${r.id}" style="border:2px solid ${r.id===selectedRole?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px 8px;text-align:center;font-size:13px;font-weight:${r.id===selectedRole?'700':'600'};color:${r.id===selectedRole?'var(--blue-light)':'var(--text)'};background:${r.id===selectedRole?'rgba(28,105,212,0.12)':'transparent'};transition:all .15s">
           ${r.label}
@@ -3199,25 +3200,25 @@ function openNewUser(){
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nombre completo</label>
+        <label for="new-user-name" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nombre completo</label>
         <input type="text" id="new-user-name" class="form-control" placeholder="Ej. Juan Pérez">
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Correo electrónico (usuario de acceso)</label>
+        <label for="new-user-username" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Correo electrónico (usuario de acceso)</label>
         <input type="email" id="new-user-username" class="form-control" placeholder="Ej. jperez@autopremium.com">
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Contraseña</label>
+        <label for="new-user-pass" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Contraseña</label>
         <input type="password" id="new-user-pass" class="form-control" placeholder="Mínimo 6 caracteres">
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar contraseña</label>
+        <label for="new-user-pass-confirm" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar contraseña</label>
         <input type="password" id="new-user-pass-confirm" class="form-control" placeholder="Repite la contraseña">
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
+        <label for="edit-user-name" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
         ${roleSelectorHtml('vendedor','new-user')}
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px">
@@ -3307,7 +3308,7 @@ function openEditUser(userId){
   if(!u) return;
   document.querySelector('#user-modal-overlay .modal-title').textContent = 'Editar Usuario';
   const avatarPreview = u.photo
-    ? `<img id="edit-user-avatar-preview" src="${u.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block">`
+    ? `<img id="edit-user-avatar-preview" src="${u.photo}" alt="Foto de perfil de ${u.name}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block">`
     : `<div id="edit-user-avatar-preview" style="width:72px;height:72px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;color:#fff">${u.name.charAt(0)}</div>`;
 
   document.getElementById('user-modal-body').innerHTML = `
@@ -3322,21 +3323,21 @@ function openEditUser(userId){
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nombre completo</label>
+        <label for="edit-user-name" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nombre completo</label>
         <input type="text" id="edit-user-name" class="form-control" value="${u.name}">
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nueva contraseña</label>
+        <label for="edit-user-pass" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nueva contraseña</label>
         <input type="password" id="edit-user-pass" class="form-control" placeholder="Dejar en blanco para no cambiar">
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar nueva contraseña</label>
+        <label for="edit-user-pass-confirm" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar nueva contraseña</label>
         <input type="password" id="edit-user-pass-confirm" class="form-control" placeholder="Repite la nueva contraseña">
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
+        <label for="reassign-mode" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
         ${roleSelectorHtml(u.role,'edit-user')}
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px">
@@ -3542,14 +3543,14 @@ function openReassignBeforeDelete(u, cnt, users){
         Antes de eliminar a este usuario, decide qué pasará con esos clientes.
       </p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">¿Qué deseas hacer con sus clientes?</label>
+        <label for="reassign-mode" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">¿Qué deseas hacer con sus clientes?</label>
         <select id="reassign-mode" class="form-control" onchange="document.getElementById('reassign-target-wrap').style.display=(this.value==='reassign')?'flex':'none'">
           <option value="reassign">Reasignar a otro vendedor</option>
           <option value="unassign">Dejarlos sin vendedor asignado</option>
         </select>
       </div>
       <div id="reassign-target-wrap" style="display:${otherVendors.length?'flex':'none'};flex-direction:column;gap:6px">
-        <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nuevo vendedor responsable</label>
+        <label for="reassign-target" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nuevo vendedor responsable</label>
         <select id="reassign-target" class="form-control">${optionsHtml}</select>
         ${otherVendors.length===0?'<div style="font-size:12px;color:var(--red)">No hay otros vendedores disponibles. Selecciona "Dejarlos sin vendedor asignado".</div>':''}
       </div>
@@ -3685,19 +3686,14 @@ function renderSettings(){
 
       <!-- Cambiar contraseña -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
-        <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-          <div style="width:34px;height:34px;border-radius:9px;background:rgba(77,143,234,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-light)" stroke-width="2" width="17" height="17"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:700;color:var(--white)">Cambiar Contraseña</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:1px">Actualiza tu contraseña de acceso</div>
-          </div>
+        <div style="padding:18px 22px;border-bottom:1px solid var(--border)">
+          <div style="font-size:15px;font-weight:700;color:var(--white)">Cambiar Contraseña</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:1px">Actualiza tu contraseña de acceso</div>
         </div>
         <div style="padding:22px">
           <div style="display:flex;flex-direction:column;gap:18px">
             <div style="display:flex;flex-direction:column;gap:6px">
-              <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Contraseña actual</label>
+              <label for="cfg-pass-cur" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Contraseña actual</label>
               <div class="pass-wrap">
                 <input type="password" id="cfg-pass-cur" class="form-control" placeholder="Ingresa tu contraseña actual" style="width:100%;font-size:14px;padding:10px 14px">
                 <button type="button" class="pass-toggle" onclick="toggleSettingsPass('cfg-pass-cur', this)" title="Mostrar/ocultar contraseña" aria-label="Mostrar u ocultar contraseña actual">
@@ -3707,7 +3703,7 @@ function renderSettings(){
             </div>
             <div style="height:1px;background:var(--border)"></div>
             <div style="display:flex;flex-direction:column;gap:6px">
-              <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nueva contraseña</label>
+              <label for="cfg-pass-new" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nueva contraseña</label>
               <div class="pass-wrap">
                 <input type="password" id="cfg-pass-new" class="form-control" placeholder="Mínimo 6 caracteres" style="width:100%;font-size:14px;padding:10px 14px">
                 <button type="button" class="pass-toggle" onclick="toggleSettingsPass('cfg-pass-new', this)" title="Mostrar/ocultar contraseña" aria-label="Mostrar u ocultar nueva contraseña">
@@ -3716,7 +3712,7 @@ function renderSettings(){
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px">
-              <label style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar nueva contraseña</label>
+              <label for="cfg-pass-confirm" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Confirmar nueva contraseña</label>
               <div class="pass-wrap">
                 <input type="password" id="cfg-pass-confirm" class="form-control" placeholder="Repite la nueva contraseña" style="width:100%;font-size:14px;padding:10px 14px">
                 <button type="button" class="pass-toggle" onclick="toggleSettingsPass('cfg-pass-confirm', this)" title="Mostrar/ocultar contraseña" aria-label="Mostrar u ocultar confirmación de contraseña">
@@ -3737,14 +3733,9 @@ function renderSettings(){
       ${currentUser.role==='administrador' ? `
       <!-- Respaldo de datos -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:20px">
-        <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-          <div style="width:34px;height:34px;border-radius:9px;background:rgba(77,143,234,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-light)" stroke-width="2" width="17" height="17"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:700;color:var(--white)">Respaldo de Datos</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:1px">Descarga una copia de clientes, usuarios y actividad</div>
-          </div>
+        <div style="padding:18px 22px;border-bottom:1px solid var(--border)">
+          <div style="font-size:15px;font-weight:700;color:var(--white)">Respaldo de Datos</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:1px">Descarga una copia de clientes, usuarios y actividad</div>
         </div>
         <div style="padding:22px">
           <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">
