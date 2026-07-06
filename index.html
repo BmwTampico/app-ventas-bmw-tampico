@@ -2133,7 +2133,7 @@ function markPrinted(docIds, clientId){
     // (se autodescarta), pero da una salida inmediata si hubo un problema
     // al imprimir (atasco, PDF mal generado, etc.) sin tener que editar
     // los datos del cliente para recuperar el documento.
-    const msg = docIds.length>1 ? `${docIds.length} documentos enviados a imprimir · se ocultaron de la lista` : 'Documento enviado a imprimir · se ocultó de la lista';
+    const msg = docIds.length>1 ? `${docIds.length} documentos impresos y ocultados de la lista` : 'Documento impreso y ocultado de la lista';
     toast(msg, 'success', { actionLabel:'Deshacer', onAction:()=>undoMarkPrinted(docIds, clientId) });
   }
   // Retira las tarjetas de la vista con una animación breve; si ya no queda
