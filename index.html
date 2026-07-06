@@ -898,7 +898,7 @@ function toast(msg, type='success', opts={}){
   // Los errores (y los toasts con acción, ej. "Deshacer") permanecen más
   // tiempo visibles, ya que requieren que el usuario lea y decida antes de
   // que se pierda la oportunidad de actuar.
-  const duration = opts.duration || (opts.actionLabel ? 6000 : (type==='success' ? 3200 : 6500));
+  const duration = opts.duration || (opts.actionLabel ? 30000 : (type==='success' ? 3200 : 6500));
   let dismissTimer = null;
   const startDismiss = ()=>{
     dismissTimer = setTimeout(()=>{
