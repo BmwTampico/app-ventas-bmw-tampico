@@ -1389,7 +1389,10 @@ function renderClientForm(clientId){
 
   document.getElementById('app-content').innerHTML = `
     <div class="breadcrumb">
-      <a class="back-btn" onclick="navigate('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Dashboard</a>
+      ${isEdit
+        ? `<a class="back-btn" onclick="navigate('client-detail',{clientId:'${clientId}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ${client.tipo==='fisica'?`${client.nombres} ${client.apellidoPaterno} ${client.apellidoMaterno}`:client.razonSocial}</a>`
+        : `<a class="back-btn" onclick="navigate('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Dashboard</a>`
+      }
     </div>
     <h2 style="font-size:20px;font-weight:800;color:var(--white);margin-bottom:20px">${isEdit?'Editar Cliente':'Registrar Nuevo Cliente'}</h2>
     <div class="tabs no-print">
@@ -1467,7 +1470,7 @@ function renderClientForm(clientId){
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="navigate('dashboard')">Cancelar</button>
+        <button type="button" class="btn btn-secondary" onclick="navigate('${isEdit?'client-detail':'dashboard'}',{clientId:'${clientId||''}'})">Cancelar</button>
         <button type="submit" class="btn btn-primary">💾 Guardar Cliente</button>
       </div>
     </form>`;
