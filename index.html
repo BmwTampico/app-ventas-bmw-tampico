@@ -74,7 +74,6 @@ input,select,textarea{font-family:inherit}
 .pass-wrap{position:relative}
 .pass-wrap .form-control{padding-right:46px}
 .pass-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray);padding:4px;display:flex;align-items:center;transition:color .2s}
-.pass-toggle:hover{color:var(--text)}
 .login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:var(--shadow)}
 .login-logo{text-align:center;margin-bottom:36px}
 .login-logo .brand-icon{width:88px;height:88px;background:var(--blue);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
@@ -88,17 +87,12 @@ input,select,textarea{font-family:inherit}
 .form-control::placeholder{color:var(--gray)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:background-color .2s ease-out,border-color .2s ease-out,color .2s ease-out}
 .btn-primary{background:var(--blue);color:white}
-.btn-primary:hover{background:var(--blue2)}
 .btn-secondary{background:var(--border);color:var(--text)}
-.btn-secondary:hover{background:#2d4060}
 .btn-danger{background:#7f1d1d;color:#fca5a5}
-.btn-danger:hover{background:#991b1b}
 .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border)}
-.btn-ghost:hover{background:var(--border);color:var(--text)}
 .btn-sm{padding:7px 14px;font-size:13px}
 .btn-full{width:100%}
 .btn-green{background:#166534;color:#86efac}
-.btn-green:hover{background:#15803d}
 .login-error{color:#fca5a5;background:#450a0a;border:1px solid #7f1d1d;border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
 
 /* ===== APP SHELL ===== */
@@ -123,7 +117,6 @@ input,select,textarea{font-family:inherit}
 .app-nav::-webkit-scrollbar{display:none}
 .nav-item{display:flex;align-items:center;gap:7px;padding:13px 16px;font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;flex-shrink:0}
 .nav-item svg{width:15px;height:15px;flex-shrink:0}
-.nav-item:hover{color:var(--text)}
 .nav-item.active{color:var(--blue-light);border-bottom-color:var(--blue-light)}
 
 /* ===== MAIN CONTENT ===== */
@@ -145,7 +138,6 @@ input,select,textarea{font-family:inherit}
 .search-results.show{display:block}
 .search-item{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
 .search-item:last-child{border-bottom:none}
-.search-item:hover{background:#1e3350;transition:background .15s}
 .search-item-name{font-weight:600;font-size:14px;color:var(--text)}
 .search-item-sub{font-size:12px;color:var(--gray);margin-top:2px}
 .search-no-result{padding:20px;text-align:center}
@@ -209,10 +201,8 @@ body.theme-light .vehicle-section h3{color:#1a5fbf}
 /* ===== DOCUMENT VIEWER ===== */
 .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px}
 .doc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .2s;position:relative}
-.doc-card:hover{border-color:var(--blue)}
 .doc-card.doc-printed{border-color:var(--green);opacity:.85}
-.doc-card.doc-printed:hover{border-color:var(--green);opacity:1}
-.doc-printed-badge{position:absolute;top:12px;right:12px;background:var(--green);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.doc-card.doc-printed-badge{position:absolute;top:12px;right:12px;background:var(--green);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .doc-card-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
 .doc-icon{width:44px;height:44px;background:#0d2a4a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .doc-icon svg{width:24px;height:24px;color:#60a5fa}
@@ -232,7 +222,6 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
 .modal-title{font-size:17px;font-weight:700;color:var(--white)}
 .modal-close{background:none;border:none;color:var(--gray);cursor:pointer;padding:4px;border-radius:6px}
-.modal-close:hover{color:var(--text);background:var(--border)}
 .modal-body{padding:24px;max-height:70vh;overflow-y:auto}
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
 
@@ -260,7 +249,6 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .toast.leaving{transform:translateX(120%);opacity:0}
 .toast span{flex:1;line-height:1.4}
 .toast-close{flex-shrink:0;background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px;transition:color .15s ease-out,background-color .15s ease-out}
-.toast-close:hover{color:var(--text);background:rgba(255,255,255,.06)}
 .toast.success{border-color:#166534}
 .toast.error{border-color:#7f1d1d}
 .toast-icon{width:20px;height:20px;flex-shrink:0}
@@ -291,8 +279,7 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .breadcrumb .current{font-size:14px;font-weight:600;color:var(--text2)}
 .breadcrumb a{cursor:pointer;display:flex;align-items:center;gap:6px;text-decoration:none}
 .breadcrumb a.back-btn{font-size:13px;font-weight:600;color:var(--text);background:var(--card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;transition:border-color .15s,color .15s}
-.breadcrumb a.back-btn:hover{border-color:var(--blue);color:var(--blue-light)}
-
+.breadcrumb a
 /* ===== PRINT ===== */
 @media print{
   body{background:white!important;color:#000!important}
@@ -340,6 +327,25 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .btn-secondary .btn-spinner,.btn-sm.btn-secondary .btn-spinner{border-color:rgba(28,105,212,.25);border-top-color:var(--blue-light)}
 @keyframes btn-spin{to{transform:rotate(360deg)}}
 button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
+
+/* ===== HOVER (solo dispositivos con puntero fino, ej. mouse) =====
+   Evita que los estados :hover queden "pegados" tras un toque en
+   tablet/celular, donde no hay verdadero hover. ===== */
+@media (hover: hover) and (pointer: fine){
+  .pass-toggle:hover{color:var(--text)}
+  .btn-primary:hover{background:var(--blue2)}
+  .btn-secondary:hover{background:#2d4060}
+  .btn-danger:hover{background:#991b1b}
+  .btn-ghost:hover{background:var(--border);color:var(--text)}
+  .btn-green:hover{background:#15803d}
+  .nav-item:hover{color:var(--text)}
+  .search-item:hover{background:#1e3350}
+  .doc-card:hover{border-color:var(--blue)}
+  .doc-printed:hover{border-color:var(--green);opacity:1}
+  .modal-close:hover{color:var(--text);background:var(--border)}
+  .toast-close:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .back-btn:hover{border-color:var(--blue);color:var(--blue-light)}
+}
 </style>
 </head>
 <body>
