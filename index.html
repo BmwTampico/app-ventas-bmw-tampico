@@ -2143,7 +2143,7 @@ function markPrinted(docIds, clientId){
     // (se autodescarta), pero da una salida inmediata si hubo un problema
     // al imprimir (atasco, PDF mal generado, etc.) sin tener que editar
     // los datos del cliente para recuperar el documento.
-    const msg = docIds.length>1 ? `${docIds.length} documentos impresos y ocultados de la lista` : 'Documento impreso y ocultado de la lista';
+    const msg = docIds.length>1 ? `${docIds.length} documentos enviados a imprimir y ocultados de la lista` : 'Documento enviado a imprimir y ocultado de la lista';
     toast(msg, 'success', { actionLabel:'Deshacer', onAction:()=>undoMarkPrinted(docIds, clientId) });
   }
   // Retira las tarjetas de la vista con una animación breve; si ya no queda
@@ -2248,15 +2248,29 @@ function printModal(){
   <body>${content}</body></html>`);
   win.document.close();
   win.focus();
-  setTimeout(()=>{
-    win.print();
-    win.close();
-    // Recién ahora se confirma que se envió a imprimir de verdad — antes de
-    // esto (solo con la vista previa abierta) el documento no se toca.
+
+  // Los navegadores no exponen a JavaScript si el usuario imprimió o
+  // canceló el diálogo nativo (restricción de privacidad) — pero sí
+  // notifican cuándo ese diálogo se cerró, con 'afterprint'. Esperamos a
+  // ese momento para marcar el documento, así el toast nunca aparece
+  // mientras el diálogo sigue abierto ni antes de que el usuario decida.
+  let settled = false;
+  const finishPrint = ()=>{
+    if(settled) return;
+    settled = true;
     if(_modalPrintContext){
       markPrinted(_modalPrintContext.docIds, _modalPrintContext.clientId);
       _modalPrintContext = null;
     }
+    try{ win.close(); }catch(e){}
+  };
+  win.onafterprint = finishPrint;
+  setTimeout(()=>{
+    try{ win.print(); }catch(e){}
+    // Respaldo: si el navegador no dispara 'afterprint' en esta ventana
+    // (pasa en algunos casos, ej. Safari con ventanas emergentes), no se
+    // deja el documento sin resolver — se marca tras un margen razonable.
+    setTimeout(finishPrint, 4000);
   },500);
 }
 
