@@ -2180,7 +2180,11 @@ async function printDoc(docId, clientId){
   if(!c) return;
   try{ await ensureTemplates(); }catch(e){ toast('No se pudieron cargar las plantillas de documentos. Revisa tu conexión.','error'); return; }
   await previewDoc(docId, clientId);
-  setTimeout(()=>{ printModal(); markPrinted([docId], clientId); }, 400);
+  // La ventana de impresión se abre con el botón "Imprimir / PDF" dentro del
+  // modal (clic directo del usuario) — abrirla automáticamente aquí rompe la
+  // "activación de usuario" que exigen los navegadores para window.open, y
+  // algunos bloqueadores de pop-ups la detienen silenciosamente.
+  markPrinted([docId], clientId);
 }
 
 async function printSelected(clientId){
@@ -2215,6 +2219,11 @@ function printModal(){
     ? '@page{size:letter landscape;margin:8mm}'
     : '@page{size:letter portrait;margin:15mm}';
   const win = window.open('','_blank');
+  if(!win){
+    toast('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.','error');
+    reportError('window.open devolvió null (posible bloqueador de pop-ups)', 'printModal');
+    return;
+  }
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Documento</title>
   <style>body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:20px}
   table{width:100%;border-collapse:collapse;margin-bottom:12px}
