@@ -201,8 +201,6 @@ body.theme-light .vehicle-section h3{color:var(--blue2)}
 /* ===== DOCUMENT VIEWER ===== */
 .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px}
 .doc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .2s;position:relative}
-.doc-card.doc-printed{border-color:var(--green);opacity:.85}
-.doc-card.doc-printed-badge{position:absolute;top:12px;right:12px;background:var(--green);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .doc-card-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
 .doc-icon{width:44px;height:44px;background:#0d2a4a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .doc-icon svg{width:24px;height:24px;color:#60a5fa}
@@ -341,7 +339,6 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
   .nav-item:hover{color:var(--text)}
   .search-item:hover{background:#1e3350}
   .doc-card:hover{border-color:var(--blue)}
-  .doc-printed:hover{border-color:var(--green);opacity:1}
   .modal-close:hover{color:var(--text);background:var(--border)}
   .toast-close:hover{color:var(--text);background:rgba(255,255,255,.06)}
   .back-btn:hover{border-color:var(--blue);color:var(--blue-light)}
@@ -1789,7 +1786,11 @@ async function saveClient(e, existingId){
   if(existingId){
     const prev = cache.clients.find(c=>c.id===existingId) || {};
     const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre});
-    row.printed_docs = []; // los documentos cambian si los datos del cliente cambian
+    // Los documentos cambian si los datos del cliente cambian: se reinician
+    // tanto el estado de "impreso" como el de "oculto" para que vuelvan a
+    // aparecer en la lista y puedan generarse de nuevo con los datos nuevos.
+    row.printed_docs = [];
+    row.hidden_docs = [];
     const { data: updated, error } = await sb.from('clients').update(row).eq('id', existingId).select().single();
     if(error){ toast('Error al actualizar el cliente: '+error.message,'error'); return; }
     const idx = cache.clients.findIndex(c=>c.id===existingId);
@@ -2024,10 +2025,10 @@ function renderDocuments(clientId){
     {id:'entrega-final', title:'Check List Entrega Final', desc:'Lista de revisión de entrega final del vehículo al cliente'},
   ];
 
-  const printedKey = `ap_printed_${clientId}`;
-  const printed = DB.get(printedKey)||[];
   const hiddenKey = `ap_hidden_${clientId}`;
   const hidden = DB.get(hiddenKey)||[];
+  // Un documento ya impreso se oculta automáticamente de la lista; solo
+  // vuelve a aparecer si se editan y guardan los datos del cliente.
   const visibleDocs = docs.filter(d=>!hidden.includes(d.id));
 
   let cards = '';
@@ -2038,32 +2039,23 @@ function renderDocuments(clientId){
 
   if(visibleDocs.length===0){
     bulkBarHtml = '';
-    const restoreBtn = hidden.length>0
-      ? `<button class="btn btn-secondary btn-sm" onclick="restoreHiddenDocs('${clientId}')">Restaurar documentos ocultos (${hidden.length})</button>`
-      : '';
     cards = `<div class="empty-state" style="grid-column:1/-1">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <p style="font-weight:600;color:var(--text);margin-bottom:6px">No hay documentos visibles para este cliente</p>
-        <p style="margin-bottom:18px">Ocultaste todos los documentos del listado para ahorrar espacio. Puedes restaurarlos cuando los necesites de nuevo.</p>
-        ${restoreBtn}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17l-5-5"/></svg>
+        <p style="font-weight:600;color:var(--text);margin-bottom:6px">Ya se generaron todos los documentos de este cliente</p>
+        <p>Si necesitas volver a imprimir alguno, edita y guarda los datos del cliente para que reaparezca en la lista.</p>
       </div>`;
   } else {
     cards = visibleDocs.map(d=>{
-      const isPrinted = printed.includes(d.id);
       return `
-      <div class="doc-card${isPrinted?' doc-printed':''}" id="doc-${d.id}">
+      <div class="doc-card" id="doc-${d.id}">
         <div class="doc-select"><input type="checkbox" id="chk-${d.id}" value="${d.id}"><label for="chk-${d.id}">Seleccionar</label></div>
-        ${isPrinted?`<div class="doc-printed-badge" role="img" aria-label="Documento ya impreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></div>`:''}
         <div class="doc-card-header">
-          <div class="doc-icon" style="${isPrinted?'color:var(--green)':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
           <div><div class="doc-title">${d.title}</div><div class="doc-desc">${d.desc}</div></div>
         </div>
         <div class="doc-actions">
           <button class="btn btn-secondary btn-sm" onclick="runAsync(this,'Cargando...',()=>previewDoc('${d.id}','${clientId}'))">👁 Vista Previa</button>
           <button class="btn btn-primary btn-sm" onclick="runAsync(this,'Generando...',()=>printDoc('${d.id}','${clientId}'))">🖨 Imprimir / PDF</button>
-          <button class="btn btn-sm" onclick="hideDoc('${d.id}','${clientId}')" title="Eliminar del listado" aria-label="Eliminar documento del listado" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:6px 8px;border-radius:6px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-          </button>
         </div>
       </div>`;
     }).join('');
@@ -2109,53 +2101,38 @@ async function previewDoc(docId, clientId){
   const _dm1=DB.get('ap_docs_count')||{}; _dm1[currentUser.id]=(_dm1[currentUser.id]||0)+1; DB.set('ap_docs_count',_dm1);
 }
 
+// Marca documento(s) como impresos y los oculta de la lista de este cliente
+// (solo vuelven a aparecer si se editan y guardan los datos del cliente).
 function markPrinted(docIds, clientId){
   const client = cache.clients.find(c=>c.id===clientId);
   if(!client) return;
   const printed = client._printed || (client._printed = []);
+  const hidden = client._hidden || (client._hidden = []);
   const isNew = docIds.some(id=>!printed.includes(id));
-  docIds.forEach(id=>{ if(!printed.includes(id)) printed.push(id); });
+  docIds.forEach(id=>{
+    if(!printed.includes(id)) printed.push(id);
+    if(!hidden.includes(id)) hidden.push(id);
+  });
   if(isNew){
-    sb.from('clients').update({ printed_docs: printed }).eq('id', clientId)
+    sb.from('clients').update({ printed_docs: printed, hidden_docs: hidden }).eq('id', clientId)
       .then(({error})=>{ if(error) console.error('markPrinted:', error.message); });
     const clientName = client.tipo==='fisica'?`${client.nombres} ${client.apellidoPaterno} ${client.apellidoMaterno}`:client.razonSocial;
     logActivity('Generó/imprimió documento(s)', `${docIds.length} documento(s) para ${clientName}`);
   }
-  // update card UI without full re-render
+  // Retira las tarjetas de la vista con una animación breve; si ya no queda
+  // ninguna, se vuelve a dibujar la vista para mostrar el estado vacío.
+  let removedAny = false;
   docIds.forEach(id=>{
     const card = document.getElementById('doc-'+id);
     if(!card) return;
-    card.classList.add('doc-printed');
-    if(!card.querySelector('.doc-printed-badge')){
-      const badge = document.createElement('div');
-      badge.className='doc-printed-badge';
-      badge.setAttribute('role','img'); badge.setAttribute('aria-label','Documento ya impreso'); badge.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
-      card.insertBefore(badge, card.firstChild);
-    }
-    const icon = card.querySelector('.doc-icon');
-    if(icon) icon.style.color='var(--green)';
+    removedAny = true;
+    card.style.transition='opacity .3s'; card.style.opacity='0';
+    setTimeout(()=>{
+      card.remove();
+      if(!document.querySelector('.docs-grid .doc-card')) navigate('documents',{clientId});
+    },300);
   });
-}
-
-async function restoreHiddenDocs(clientId){
-  const client = cache.clients.find(c=>c.id===clientId);
-  if(!client) return;
-  const { error } = await sb.from('clients').update({ hidden_docs: [] }).eq('id', clientId);
-  if(error){ toast('Error al restaurar documentos: '+error.message,'error'); return; }
-  client._hidden = [];
-  navigate('documents',{clientId});
-}
-
-function hideDoc(docId, clientId){
-  const client = cache.clients.find(c=>c.id===clientId);
-  if(!client) return;
-  const hidden = client._hidden || (client._hidden = []);
-  if(!hidden.includes(docId)) hidden.push(docId);
-  sb.from('clients').update({ hidden_docs: hidden }).eq('id', clientId)
-    .then(({error})=>{ if(error) console.error('hideDoc:', error.message); });
-  const card = document.getElementById('doc-'+docId);
-  if(card){ card.style.transition='opacity .3s'; card.style.opacity='0'; setTimeout(()=>card.remove(),300); }
-  toast('Documento eliminado del listado');
+  if(!removedAny && currentView==='documents') navigate('documents',{clientId});
 }
 
 async function printDoc(docId, clientId){
