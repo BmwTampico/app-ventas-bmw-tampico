@@ -134,8 +134,9 @@ input,select,textarea{font-family:inherit}
 .stat-card .stat-lbl{font-size:13px;color:var(--gray);margin-top:6px}
 .search-bar-wrap{position:relative;margin-bottom:20px}
 .search-bar-wrap svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--gray)}
-.search-input{width:100%;padding:14px 16px 14px 46px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;transition:border-color .2s}
+.search-input{width:100%;padding:14px 40px 14px 46px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;transition:border-color .2s}
 .search-input:focus{outline:none;border-color:var(--blue)}
+.search-kbd-hint{position:absolute;right:14px;top:50%;transform:translateY(-50%);padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--navy);color:var(--text2);font-size:11px;font-family:inherit;line-height:1.4}
 .search-input::placeholder{color:var(--gray)}
 .search-results{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-top:8px;overflow:hidden;display:none}
 .search-results.show{display:block}
@@ -189,9 +190,10 @@ select.form-control option{background:var(--navy)}
 
 /* PASOS DEL FORMULARIO DE CLIENTE */
 .step-nav{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
-.step-pill{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:background-color .15s ease-out,border-color .15s ease-out,color .15s ease-out,transform .1s ease-out}
+.step-pill{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:background-color .15s ease-out,border-color .15s ease-out,color .15s ease-out,transform .1s ease-out;position:relative}
 .step-pill:active{transform:scale(0.96)}
 .step-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.step-pill-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;vertical-align:middle}
 .form-step{display:none}
 .form-step.active{display:block}
 .tab-btn.active{background:var(--blue);color:white}
@@ -313,6 +315,7 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 
 /* ===== RESPONSIVE ===== */
 @media(max-width:680px){
+  .search-kbd-hint{display:none}
   .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr}
   .app-main{padding:16px}
   .login-card{padding:28px 20px}
@@ -1048,6 +1051,7 @@ function renderDashboard(){
     <div class="search-bar-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="text" class="search-input" id="dash-search" placeholder="Buscar cliente por nombre o RFC..." oninput="debounceCall('dash-search', ()=>liveSearch(this.value))" aria-label="Buscar cliente por nombre o RFC">
+      <kbd class="search-kbd-hint" aria-hidden="true">/</kbd>
     </div>
     <div class="search-results" id="search-results"></div>
     <div class="section-header"><span class="section-title">Clientes Recientes</span></div>
@@ -1556,6 +1560,7 @@ function renderClientForm(clientId){
     </form>`;
   goToFormStep('cliente');
   renderTipoFields(client);
+  _updateStepCompletionBadge();
   const formEl = document.getElementById('client-form');
   if(formEl){
     // CURP/RFC ya manejan su propio estado .invalid con validación de
@@ -1568,8 +1573,9 @@ function renderClientForm(clientId){
       if(t && t.classList && t.classList.contains('invalid') && !_curpRfcIds.has(t.id) && t.value && t.value.trim()){
         t.classList.remove('invalid');
       }
+      _updateStepCompletionBadge();
     });
-    formEl.addEventListener('change', ()=>{ _clientFormDirty = true; });
+    formEl.addEventListener('change', ()=>{ _clientFormDirty = true; _updateStepCompletionBadge(); });
   }
 }
 
@@ -1577,6 +1583,47 @@ function renderClientForm(clientId){
 function v(obj, key, def=''){
   return obj && obj[key] !== undefined ? String(obj[key]).replace(/"/g,'&quot;') : def;
 }
+
+// Campos requeridos por tipo de persona — únicos, compartidos entre
+// saveClient() (validación al guardar) y el indicador de completitud del
+// paso "Cliente" (_updateStepCompletionBadge), para que nunca se desincronicen.
+const REQUIRED_FIELDS_FISICA = [
+  {id:'f-nombres',   label:'Nombre(s)'},
+  {id:'f-appaterno', label:'Apellido Paterno'},
+  {id:'f-apmaterno', label:'Apellido Materno'},
+  {id:'f-fnac',      label:'Fecha de Nacimiento'},
+  {id:'f-curp',      label:'CURP'},
+  {id:'f-rfc',       label:'RFC'},
+  {id:'f-calle',     label:'Calle'},
+  {id:'f-numext',    label:'Número Exterior'},
+  {id:'f-colonia',   label:'Colonia'},
+  {id:'f-municipio', label:'Municipio'},
+  {id:'f-ciudad',    label:'Ciudad'},
+  {id:'f-estado',    label:'Estado'},
+  {id:'f-cp',        label:'Código Postal'},
+  {id:'f-tel',       label:'Teléfono'},
+  {id:'f-correo',    label:'Correo Electrónico'},
+];
+const REQUIRED_FIELDS_MORAL = [
+  {id:'f-razon',      label:'Razón Social'},
+  {id:'f-rfc-moral',  label:'RFC de la empresa'},
+  {id:'f-fconst',     label:'Fecha de Constitución'},
+  {id:'f-giro',       label:'Giro Mercantil'},
+  {id:'f-calle',      label:'Calle'},
+  {id:'f-numext',     label:'Número Exterior'},
+  {id:'f-colonia',    label:'Colonia'},
+  {id:'f-municipio',  label:'Municipio'},
+  {id:'f-ciudad',     label:'Ciudad'},
+  {id:'f-estado',     label:'Estado'},
+  {id:'f-cp',         label:'Código Postal'},
+  {id:'f-tel',        label:'Teléfono'},
+  {id:'f-correo',     label:'Correo Electrónico'},
+  {id:'f-rep-nombres',label:'Nombre del Representante'},
+  {id:'f-rep-pat',    label:'Apellido Paterno del Representante'},
+  {id:'f-rep-mat',    label:'Apellido Materno del Representante'},
+  {id:'f-rep-fnac',   label:'Fecha de Nacimiento del Representante'},
+  {id:'f-rep-curp',   label:'CURP del Representante'},
+];
 
 // Divide el formulario de cliente en pasos navegables (Cliente/Vehículo/
 // Finanzas/Entrega) mostrando solo uno a la vez vía CSS — no quita ningún
@@ -1618,6 +1665,31 @@ function switchTipo(tipo){
   activeTipo=tipo;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(tipo==='fisica'?'Física':'Moral')));
   renderTipoFields(null);
+  _updateStepCompletionBadge();
+}
+
+// Marca en la pill "1. Cliente" cuántos campos requeridos faltan por
+// llenar, para que saltar directo a otro paso no sea una sorpresa al
+// intentar guardar — se actualiza en vivo mientras el vendedor escribe.
+function _updateStepCompletionBadge(){
+  const pill = document.querySelector('.step-pill[data-step="cliente"]');
+  if(!pill) return;
+  const required = activeTipo==='fisica' ? REQUIRED_FIELDS_FISICA : REQUIRED_FIELDS_MORAL;
+  const missing = required.filter(f=>{
+    const el = document.getElementById(f.id);
+    return !el || !el.value.trim();
+  }).length;
+  let badge = pill.querySelector('.step-pill-badge');
+  if(missing>0){
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'step-pill-badge';
+      pill.appendChild(badge);
+    }
+    badge.textContent = missing;
+  } else if(badge){
+    badge.remove();
+  }
 }
 
 function renderTipoFields(client){
@@ -1786,24 +1858,7 @@ async function saveClient(e, existingId){
   try {
   let client = {};
   if(activeTipo==='fisica'){
-    // Campos obligatorios básicos
-    const required = [
-      {id:'f-nombres',   label:'Nombre(s)'},
-      {id:'f-appaterno', label:'Apellido Paterno'},
-      {id:'f-apmaterno', label:'Apellido Materno'},
-      {id:'f-fnac',      label:'Fecha de Nacimiento'},
-      {id:'f-curp',      label:'CURP'},
-      {id:'f-rfc',       label:'RFC'},
-      {id:'f-calle',     label:'Calle'},
-      {id:'f-numext',    label:'Número Exterior'},
-      {id:'f-colonia',   label:'Colonia'},
-      {id:'f-municipio', label:'Municipio'},
-      {id:'f-ciudad',    label:'Ciudad'},
-      {id:'f-estado',    label:'Estado'},
-      {id:'f-cp',        label:'Código Postal'},
-      {id:'f-tel',       label:'Teléfono'},
-      {id:'f-correo',    label:'Correo Electrónico'},
-    ];
+    const required = REQUIRED_FIELDS_FISICA;
     // Recolecta TODOS los campos faltantes/inválidos de una sola pasada,
     // en vez de detenerse en el primero — evita varios ciclos de
     // "guardar y fallar" frente al cliente.
@@ -1832,27 +1887,7 @@ async function saveClient(e, existingId){
       idNombre:g('f-id-nombre'), idAutoridad:g('f-id-aut'), idFolio:g('f-id-folio'),
     });
   } else {
-    // Campos obligatorios Persona Moral
-    const required = [
-      {id:'f-razon',      label:'Razón Social'},
-      {id:'f-rfc-moral',  label:'RFC de la empresa'},
-      {id:'f-fconst',     label:'Fecha de Constitución'},
-      {id:'f-giro',       label:'Giro Mercantil'},
-      {id:'f-calle',      label:'Calle'},
-      {id:'f-numext',     label:'Número Exterior'},
-      {id:'f-colonia',    label:'Colonia'},
-      {id:'f-municipio',  label:'Municipio'},
-      {id:'f-ciudad',     label:'Ciudad'},
-      {id:'f-estado',     label:'Estado'},
-      {id:'f-cp',         label:'Código Postal'},
-      {id:'f-tel',        label:'Teléfono'},
-      {id:'f-correo',     label:'Correo Electrónico'},
-      {id:'f-rep-nombres',label:'Nombre del Representante'},
-      {id:'f-rep-pat',    label:'Apellido Paterno del Representante'},
-      {id:'f-rep-mat',    label:'Apellido Materno del Representante'},
-      {id:'f-rep-fnac',   label:'Fecha de Nacimiento del Representante'},
-      {id:'f-rep-curp',   label:'CURP del Representante'},
-    ];
+    const required = REQUIRED_FIELDS_MORAL;
     const missing = [];
     for(const f of required){
       const el = document.getElementById(f.id);
@@ -4025,6 +4060,34 @@ document.addEventListener('keydown', e=>{
   if(userOverlay && userOverlay.classList.contains('open')){ closeUserModal(); return; }
   if(docOverlay && docOverlay.classList.contains('open')){ closeModal(); return; }
   if(searchBox && searchBox.classList.contains('show')){ searchBox.classList.remove('show'); return; }
+});
+
+// Atajos de teclado para flujos frecuentes (usuarios avanzados como
+// gerentes/administradores revisando muchos clientes al día): "/" enfoca
+// la búsqueda del dashboard, "n" abre "Nuevo Cliente". Se desactivan
+// mientras se escribe en un campo, con un modal abierto, o con teclas
+// modificadoras — para no interferir con la escritura normal ni con
+// atajos propios del navegador.
+document.addEventListener('keydown', e=>{
+  if(!currentUser) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  const isTyping = t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable);
+  if(isTyping) return;
+  const anyModalOpen = ['confirm-modal-overlay','user-modal-overlay','modal-overlay','recovery-modal-overlay'].some(id=>{
+    const el = document.getElementById(id);
+    return el && el.classList.contains('open');
+  });
+  if(anyModalOpen) return;
+  if(e.key==='/'){
+    const search = document.getElementById('dash-search');
+    if(search){ e.preventDefault(); search.focus(); }
+    return;
+  }
+  if(e.key==='n' || e.key==='N'){
+    e.preventDefault();
+    navigate('new-client');
+  }
 });
 
 function togglePass(){
