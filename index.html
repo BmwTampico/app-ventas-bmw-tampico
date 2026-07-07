@@ -486,6 +486,22 @@ if(window.Sentry){
     dsn: 'https://a8f787235fe60e1ac500d8790bf3c8f5@o4511678568988672.ingest.us.sentry.io/4511678575214592',
     tracesSampleRate: 0,        // no rastreamos rendimiento, solo errores
     sendDefaultPii: false,      // nunca enviar datos personales por defecto
+    // Ruido conocido de extensiones del navegador (traductores, bloqueadores
+    // de anuncios, gestores de contraseñas, etc.) que a veces se reporta
+    // como si viniera de la página visitada, aunque nunca pasó por nuestro
+    // código. No son errores reales de la app.
+    ignoreErrors: [
+      'contentScriptData',
+      'top.GLOBALS',
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
+      'Non-Error promise rejection captured',
+      'Script error.',
+    ],
+    // Ignora también errores cuyo stack apunte a una extensión del navegador
+    // (chrome-extension://, moz-extension://, etc.), aunque la URL principal
+    // reportada sea la de nuestra app.
+    denyUrls: [/^chrome-extension:\/\//i, /^moz-extension:\/\//i, /^safari-extension:\/\//i, /^safari-web-extension:\/\//i],
     beforeSend(event){
       // Filtro de seguridad extra: si por alguna razón el mensaje de error
       // trajera datos sensibles (nunca debería), lo dejamos pasar tal cual
