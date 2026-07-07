@@ -625,6 +625,13 @@ async function loadAll(){
 // español, en vez de mostrar el texto crudo del driver (ej. "duplicate key
 // value violates unique constraint") al usuario final. El error original
 // se conserva en la consola para depuración.
+// Ícono SVG inline consistente para usar junto a texto dentro de un botón
+// (reemplaza los emojis funcionales por el mismo trazo dibujado a mano que
+// ya usa el resto de la app — nav, modales, campos de contraseña, etc.).
+function _btnIcon(inner, size=14){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="${size}" height="${size}" style="display:inline;vertical-align:middle;margin-right:6px" aria-hidden="true">${inner}</svg>`;
+}
+
 function _friendlyDbError(error, context){
   if(context) console.error(context+':', error);
   if(!error) return 'Ocurrió un error. Intenta de nuevo.';
@@ -1543,7 +1550,7 @@ function renderClientForm(clientId){
           <button type="button" class="btn btn-secondary" onclick="goToFormStep('finanzas')">← Anterior</button>
           <div style="display:flex;gap:12px">
             <button type="button" class="btn btn-secondary" onclick="navigate('${isEdit?'client-detail':'dashboard'}',{clientId:'${clientId||''}'})">Cancelar</button>
-            <button type="submit" class="btn btn-primary">💾 Guardar Cliente</button>
+            <button type="submit" class="btn btn-primary">${_btnIcon('<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>')} Guardar Cliente</button>
           </div>
         </div>
       </div>
@@ -2093,9 +2100,9 @@ function renderClientDetail(clientId){
         <div class="client-sub">RFC: ${rfc||'—'} · Vendedor: ${c.vendedorNombre} · Registro: ${fmtDate(c.fechaRegistro)}</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="navigate('documents',{clientId:'${c.id}'})">📄 Documentos</button>
-        ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="navigate('edit-client',{clientId:'${c.id}'})">✏️ Editar</button>`:''}
-        ${currentUser.role==='administrador'?`<button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="confirmDeleteClient('${c.id}')">🗑️ Eliminar</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="navigate('documents',{clientId:'${c.id}'})">${_btnIcon('<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>')} Documentos</button>
+        ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="navigate('edit-client',{clientId:'${c.id}'})">${_btnIcon('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>')} Editar</button>`:''}
+        ${currentUser.role==='administrador'?`<button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="confirmDeleteClient('${c.id}')">${_btnIcon('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>')} Eliminar</button>`:''}
       </div>
     </div>
     <div class="detail-grid">
@@ -2167,7 +2174,7 @@ function renderDocuments(clientId){
   let cards = '';
   let bulkBarHtml = `<div class="bulk-bar">
       <p>Selecciona uno o varios documentos para imprimirlos en conjunto.</p>
-      <button class="btn btn-primary btn-sm" onclick="runAsync(this,'Generando...',()=>printSelected('${clientId}'))">🖨 Imprimir Seleccionados</button>
+      <button class="btn btn-primary btn-sm" onclick="runAsync(this,'Generando...',()=>printSelected('${clientId}'))">${_btnIcon('<path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 4H8v-6h8v6z"/>')} Imprimir Seleccionados</button>
     </div>`;
 
   if(visibleDocs.length===0){
@@ -2187,8 +2194,8 @@ function renderDocuments(clientId){
           <div><div class="doc-title">${d.title}</div><div class="doc-desc">${d.desc}</div></div>
         </div>
         <div class="doc-actions">
-          <button class="btn btn-secondary btn-sm" onclick="runAsync(this,'Cargando...',()=>previewDoc('${d.id}','${clientId}'))">👁 Vista Previa</button>
-          <button class="btn btn-primary btn-sm" onclick="runAsync(this,'Generando...',()=>printDoc('${d.id}','${clientId}'))">🖨 Imprimir / PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="runAsync(this,'Cargando...',()=>previewDoc('${d.id}','${clientId}'))">${_btnIcon('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>')} Vista Previa</button>
+          <button class="btn btn-primary btn-sm" onclick="runAsync(this,'Generando...',()=>printDoc('${d.id}','${clientId}'))">${_btnIcon('<path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 4H8v-6h8v6z"/>')} Imprimir / PDF</button>
         </div>
       </div>`;
     }).join('');
@@ -3116,10 +3123,10 @@ function renderUsers(){
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span class="role-pill ${u.role==='administrador'?'role-admin':u.role==='gerente'?'role-gerente':'role-vendedor'}">${u.role}</span>
-        ${u.locked ? `<span class="role-pill" style="background:#3d1f0a;color:#fb923c">🔒 Bloqueado</span>
-        <button class="btn btn-sm" style="background:var(--red);color:#fff;font-weight:700" onclick="runAsync(this,'Desbloqueando...',()=>unlockUser('${u.username}'))">🔓 Desbloquear</button>` : ''}
+        ${u.locked ? `<span class="role-pill" style="background:#3d1f0a;color:#fb923c">${_btnIcon('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',12)} Bloqueado</span>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff;font-weight:700" onclick="runAsync(this,'Desbloqueando...',()=>unlockUser('${u.username}'))">${_btnIcon('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/>')} Desbloquear</button>` : ''}
         ${(currentUser.role==='administrador' || u.role!=='administrador') ? `
-        <button class="btn btn-secondary btn-sm" onclick="openEditUser('${u.id}')" aria-label="Editar usuario ${u.name}">✏️ Editar</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditUser('${u.id}')" aria-label="Editar usuario ${u.name}">${_btnIcon('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>')} Editar</button>
         ${u.id!==currentUser.id?`<button class="btn btn-sm" onclick="confirmDeleteUser('${u.id}')" title="Eliminar usuario" aria-label="Eliminar usuario ${u.name}" style="background:transparent;border:1px solid var(--border);color:var(--red);padding:6px 10px;border-radius:6px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
         </button>`:''}` : ''}
@@ -3840,7 +3847,11 @@ function renderSettings(){
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
             ${['dark','light','auto'].map(m=>{
               const active = m===savedTheme;
-              const icon = m==='dark'?'🌙':m==='light'?'☀️':'⚙️';
+              const icon = m==='dark'
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="24" height="24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>'
+                : m==='light'
+                  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="24" height="24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+                  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="24" height="24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
               const label = m==='dark'?'Noche':m==='light'?'Día':'Automático';
               const sub = m==='dark'?'Siempre oscuro':m==='light'?'Siempre claro':'Sigue al sistema';
               return `<button id="theme-btn-${m}" onclick="setTheme('${m}')" style="
