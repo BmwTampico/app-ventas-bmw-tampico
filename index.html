@@ -1535,7 +1535,17 @@ function renderClientForm(clientId){
   renderTipoFields(client);
   const formEl = document.getElementById('client-form');
   if(formEl){
-    formEl.addEventListener('input', ()=>{ _clientFormDirty = true; });
+    // CURP/RFC ya manejan su propio estado .invalid con validación de
+    // formato en cada tecleo (validateCURP/validateRFCFisica/Moral) — no
+    // los tocamos aquí para no pisar ese estado más preciso.
+    const _curpRfcIds = new Set(['f-curp','f-rfc','f-rfc-moral','f-rep-curp','f-rep-rfc']);
+    formEl.addEventListener('input', (e)=>{
+      _clientFormDirty = true;
+      const t = e.target;
+      if(t && t.classList && t.classList.contains('invalid') && !_curpRfcIds.has(t.id) && t.value && t.value.trim()){
+        t.classList.remove('invalid');
+      }
+    });
     formEl.addEventListener('change', ()=>{ _clientFormDirty = true; });
   }
 }
@@ -1570,6 +1580,15 @@ function _focusStepField(el){
   if(!el) return;
   goToFormStep('cliente');
   el.focus();
+}
+
+// Arma un solo mensaje con todos los campos faltantes/inválidos, en vez de
+// obligar a descubrirlos uno por uno guardando repetidamente.
+function _missingFieldsMsg(missing){
+  if(missing.length===1) return 'Falta un campo requerido: ' + missing[0].label;
+  const names = missing.slice(0,4).map(m=>m.label);
+  const extra = missing.length>4 ? ` y ${missing.length-4} más` : '';
+  return `Faltan ${missing.length} campos requeridos: ${names.join(', ')}${extra}`;
 }
 
 function switchTipo(tipo){
@@ -1762,23 +1781,25 @@ async function saveClient(e, existingId){
       {id:'f-tel',       label:'Teléfono'},
       {id:'f-correo',    label:'Correo Electrónico'},
     ];
+    // Recolecta TODOS los campos faltantes/inválidos de una sola pasada,
+    // en vez de detenerse en el primero — evita varios ciclos de
+    // "guardar y fallar" frente al cliente.
+    const missing = [];
     for(const f of required){
       const el = document.getElementById(f.id);
       if(!el || !el.value.trim()){
-        toast('Campo requerido: ' + f.label, 'error');
-        if(el) _focusStepField(el);
-        return;
+        missing.push(f);
+        if(el) el.classList.add('invalid');
       }
     }
-    // Validar CURP (solo longitud)
     const curpEl = document.getElementById('f-curp');
-    if(curpEl.value.trim() && !validateCURP(curpEl)){
-      _focusStepField(curpEl); toast('La CURP debe tener exactamente 18 caracteres', 'error'); return;
-    }
-    // Validar RFC (formato)
+    if(curpEl && curpEl.value.trim() && !validateCURP(curpEl)) missing.push({id:'f-curp', label:'CURP (formato inválido)'});
     const rfcEl = document.getElementById('f-rfc');
-    if(!validateRFCFisica(rfcEl)){
-      _focusStepField(rfcEl); toast('El RFC no tiene el formato correcto (ej. ABCD010101ABC)', 'error'); return;
+    if(rfcEl && rfcEl.value.trim() && !validateRFCFisica(rfcEl)) missing.push({id:'f-rfc', label:'RFC (formato inválido)'});
+    if(missing.length){
+      _focusStepField(document.getElementById(missing[0].id));
+      toast(_missingFieldsMsg(missing), 'error');
+      return;
     }
     Object.assign(client,{
       tipo:'fisica',
@@ -1809,28 +1830,24 @@ async function saveClient(e, existingId){
       {id:'f-rep-fnac',   label:'Fecha de Nacimiento del Representante'},
       {id:'f-rep-curp',   label:'CURP del Representante'},
     ];
+    const missing = [];
     for(const f of required){
       const el = document.getElementById(f.id);
       if(!el || !el.value.trim()){
-        toast('Campo requerido: ' + f.label, 'error');
-        if(el) _focusStepField(el);
-        return;
+        missing.push(f);
+        if(el) el.classList.add('invalid');
       }
     }
-    // Validar RFC Moral
     const rfcMoralEl = document.getElementById('f-rfc-moral');
-    if(!validateRFCMoral(rfcMoralEl)){
-      _focusStepField(rfcMoralEl); toast('El RFC de la empresa no tiene el formato correcto (ej. ABC010101ABC)', 'error'); return;
-    }
-    // Validar CURP representante
+    if(rfcMoralEl && rfcMoralEl.value.trim() && !validateRFCMoral(rfcMoralEl)) missing.push({id:'f-rfc-moral', label:'RFC de la empresa (formato inválido)'});
     const repCurpEl = document.getElementById('f-rep-curp');
-    if(repCurpEl && repCurpEl.value.trim() && !validateCURP(repCurpEl)){
-      _focusStepField(repCurpEl); toast('La CURP del representante debe tener exactamente 18 caracteres', 'error'); return;
-    }
-    // Validar RFC representante (opcional pero si está debe ser válido)
+    if(repCurpEl && repCurpEl.value.trim() && !validateCURP(repCurpEl)) missing.push({id:'f-rep-curp', label:'CURP del Representante (formato inválido)'});
     const repRfcEl = document.getElementById('f-rep-rfc');
-    if(repRfcEl && repRfcEl.value.trim() && !validateRFCFisica(repRfcEl)){
-      _focusStepField(repRfcEl); toast('El RFC del representante no tiene el formato correcto', 'error'); return;
+    if(repRfcEl && repRfcEl.value.trim() && !validateRFCFisica(repRfcEl)) missing.push({id:'f-rep-rfc', label:'RFC del Representante (formato inválido)'});
+    if(missing.length){
+      _focusStepField(document.getElementById(missing[0].id));
+      toast(_missingFieldsMsg(missing), 'error');
+      return;
     }
     Object.assign(client,{
       tipo:'moral',
