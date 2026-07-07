@@ -326,9 +326,8 @@ body.theme-light .doc-icon svg{color:var(--blue)}
   .header-right{gap:8px}
   .user-info{display:none}
   .app-nav{padding:0 14px}
-  .nav-item{padding:12px 12px}
-  .nav-item span{display:none}
-  .nav-item svg{width:18px;height:18px}
+  .nav-item{padding:10px 10px;gap:5px;font-size:11px}
+  .nav-item svg{width:16px;height:16px}
 }
 
 /* ===== BACK TO DOCS ===== */
@@ -876,7 +875,7 @@ function renderNav(){
   const isAdmin = currentUser.role==='administrador' || currentUser.role==='gerente';
   const active = _navSection(currentView);
   const item = (key, label, view, icon)=>`
-    <div class="nav-item ${active===key?'active':''}" onclick="navigate('${view}')" role="button" tabindex="0" aria-current="${active===key?'page':'false'}" onkeydown="if(event.key==='Enter'||event.key===' '){navigate('${view}')}">
+    <div class="nav-item ${active===key?'active':''}" onclick="navigate('${view}')" role="button" tabindex="0" aria-current="${active===key?'page':'false'}" onkeydown="if(event.key==='Enter'||event.key===' '){navigate('${view}')}" title="${label}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${icon}</svg>
       <span>${label}</span>
     </div>`;
@@ -4058,6 +4057,16 @@ function resetInactivityTimer(){
 }
 ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(ev=>{
   document.addEventListener(ev, resetInactivityTimer, { passive:true });
+});
+
+// Advierte antes de cerrar/recargar la pestaña con cambios sin guardar en
+// el formulario de cliente. La guarda de navegación interna (_clientFormDirty
+// + navigate()) no cubre este caso — un refresh o cierre accidental de
+// pestaña perdería todo lo capturado sin ningún aviso.
+window.addEventListener('beforeunload', (e)=>{
+  if(!_clientFormDirty) return;
+  e.preventDefault();
+  e.returnValue = ''; // requerido por Chrome para mostrar el diálogo nativo
 });
 
 // Refresca los datos cuando el usuario vuelve a la pestaña (sesiones concurrentes).
