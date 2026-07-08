@@ -206,6 +206,7 @@ select.form-control option{background:var(--navy)}
 /* VEHICLE SECTION */
 .vehicle-section{background:linear-gradient(135deg,#0d1e35,#112241);border:1px solid #1c4080;border-radius:var(--radius);padding:24px;margin-bottom:20px}
 .vehicle-section h3{color:#60a5fa;font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-subsection-title{color:var(--text2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px}
 body.theme-light .vehicle-section{background:var(--card);border:1px solid var(--border)}
 body.theme-light .vehicle-section h3{color:var(--blue2)}
 
@@ -1477,7 +1478,8 @@ function renderClientForm(clientId){
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m-4 12a2 2 0 100-4 2 2 0 000 4zm6 0a2 2 0 100-4 2 2 0 000 4zm.5-7H9a1 1 0 01-1-1V9h9v2l1 3h-2.5z"/></svg>
             Datos del Vehículo
           </h3>
-          <div class="form-grid form-grid-3" style="margin-bottom:16px">
+          <h4 class="form-subsection-title">Identificación del vehículo</h4>
+          <div class="form-grid form-grid-3" style="margin-bottom:24px">
             <div class="form-group"><label for="f-marca">Marca</label><input class="form-control" id="f-marca" value="${v(client,'vehiculoMarca','BMW')}"></div>
             <div class="form-group"><label for="f-submarca">Modelo</label><input class="form-control" id="f-submarca" placeholder="X3 xDrive30, Serie 3 320i..." value="${v(client,'vehiculoSubmarca','')}"></div>
             <div class="form-group"><label for="f-color">Color</label><input class="form-control" id="f-color" value="${v(client,'vehiculoColor','')}"></div>
@@ -1485,6 +1487,9 @@ function renderClientForm(clientId){
             <div class="form-group"><label for="f-niv">VIN / No. de Serie</label><input class="form-control" id="f-niv" placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
             <div class="form-group"><label for="f-motor">No. de Motor</label><input class="form-control" id="f-motor" value="${v(client,'vehiculoMotor','')}"></div>
             <div class="form-group"><label for="f-capacidad">Capacidad</label><input class="form-control" id="f-capacidad" placeholder="5 personas" value="${v(client,'vehiculoCapacidad','')}"></div>
+          </div>
+          <h4 class="form-subsection-title">Venta y entrega</h4>
+          <div class="form-grid form-grid-3">
             <div class="form-group"><label for="f-precio">Precio de Lista</label><input class="form-control" id="f-precio" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-pago">Forma de Pago</label>
               <select class="form-control" id="f-pago">
@@ -1496,7 +1501,6 @@ function renderClientForm(clientId){
             </div>
             <div class="form-group"><label for="f-fecha-ent">Fecha de Entrega</label><input class="form-control" id="f-fecha-ent" type="date" value="${v(client,'vehiculoFechaEntrega','')}"></div>
             <div class="form-group"><label for="f-lugar-ent">Lugar de Entrega</label><input class="form-control" id="f-lugar-ent" value="${v(client,'vehiculoLugar','Tampico')}"></div>
-
           </div>
         </div><!-- end vehicle-section -->
         <div style="display:flex;justify-content:space-between;margin-top:20px">
