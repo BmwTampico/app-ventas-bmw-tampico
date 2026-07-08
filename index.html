@@ -187,6 +187,8 @@ select.form-control option{background:var(--navy)}
 /* TABS */
 .tabs{display:flex;gap:4px;background:var(--navy);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:24px;width:fit-content}
 .tab-btn{padding:9px 20px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--gray);transition:background-color .2s ease-out,color .2s ease-out}
+.tab-btn:disabled{cursor:default}
+.tab-btn:disabled:not(.active){opacity:.5}
 
 /* PASOS DEL FORMULARIO DE CLIENTE */
 .step-nav{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
@@ -1454,8 +1456,8 @@ function renderClientForm(clientId){
     </div>
     <h2 style="font-size:20px;font-weight:800;color:var(--white);margin-bottom:20px">${isEdit?'Editar Cliente':'Registrar Nuevo Cliente'}</h2>
     <div class="tabs no-print">
-      <button class="tab-btn ${activeTipo==='fisica'?'active':''}" onclick="switchTipo('fisica')">Persona Física</button>
-      <button class="tab-btn ${activeTipo==='moral'?'active':''}" onclick="switchTipo('moral')">Persona Moral</button>
+      <button class="tab-btn ${activeTipo==='fisica'?'active':''}" ${isEdit?'disabled title="El tipo de persona no se puede cambiar una vez creado el cliente"':`onclick="switchTipo('fisica')"`}>Persona Física</button>
+      <button class="tab-btn ${activeTipo==='moral'?'active':''}" ${isEdit?'disabled title="El tipo de persona no se puede cambiar una vez creado el cliente"':`onclick="switchTipo('moral')"`}>Persona Moral</button>
     </div>
     <form id="client-form" onsubmit="saveClient(event,'${clientId||''}')">
       <div class="step-nav no-print">
