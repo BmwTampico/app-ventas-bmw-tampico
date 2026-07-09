@@ -199,6 +199,9 @@ select.form-control option{background:var(--navy)}
 .step-pill:active{transform:scale(0.96)}
 .step-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .step-pill-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;vertical-align:middle}
+.cliente-subnav{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.cliente-subnav-pill{padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:background-color .15s ease-out,border-color .15s ease-out,color .15s ease-out}
+@media (hover:hover) and (pointer:fine){ .cliente-subnav-pill:hover{border-color:var(--blue);color:var(--blue-light)} }
 .form-step{display:none}
 .form-step.active{display:block}
 .tab-btn.active{background:var(--blue);color:white}
@@ -1515,6 +1518,7 @@ function renderClientForm(clientId){
       </div>
 
       <div class="form-step active" id="form-step-cliente" data-step="cliente">
+        <div class="cliente-subnav no-print" id="cliente-subnav"></div>
         <div id="tipo-fields"></div>
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
           <button type="button" class="btn btn-primary" onclick="goToFormStep('vehiculo')">Siguiente: Vehículo →</button>
@@ -1751,13 +1755,30 @@ function renderTipoFields(client){
   if(!tf) return;
   if(activeTipo==='fisica') tf.innerHTML = buildFisicaFields(c);
   else tf.innerHTML = buildMoralFields(c);
+  _renderClienteSubnav();
+}
+
+// Jump-nav dentro del paso "Cliente": permite saltar directo a una sección
+// (Datos Personales/Domicilio/Contacto...) en vez de hacer scroll por los
+// ~30 campos del paso de un tirón. Se reconstruye a partir de los .form-card
+// realmente renderizados, así que funciona igual para Física y Moral sin
+// hardcodear la lista de secciones por tipo.
+function _renderClienteSubnav(){
+  const nav = document.getElementById('cliente-subnav');
+  const tf = document.getElementById('tipo-fields');
+  if(!nav || !tf) return;
+  const cards = [...tf.querySelectorAll('.form-card[id]')];
+  nav.innerHTML = cards.map(card=>{
+    const title = card.querySelector('h3')?.textContent || '';
+    return `<button type="button" class="cliente-subnav-pill" onclick="document.getElementById('${card.id}').scrollIntoView({behavior:'smooth',block:'start'})">${title}</button>`;
+  }).join('');
 }
 
 function buildFisicaFields(c){
   const pre = (!c && prefillName) ? parsePrefillName() : null;
   const pv  = (key, def='') => c ? v(c,key,def) : (pre ? (pre[key]||def) : def);
   return `
-  <div class="form-card">
+  <div class="form-card" id="cf-personales">
     <h3>Datos Personales</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group"><label for="f-nombres">Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-nombres" required value="${pv('nombres')}"><div class="field-error" id="e-nombres">Campo requerido</div></div>
@@ -1772,7 +1793,7 @@ function buildFisicaFields(c){
       <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
     </div>
   </div>
-  <div class="form-card">
+  <div class="form-card" id="cf-domicilio">
     <h3>Domicilio</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group" style="grid-column:span 2"><label for="f-calle">Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
@@ -1786,7 +1807,7 @@ function buildFisicaFields(c){
       <div class="form-group"><label for="f-pais">País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
     </div>
   </div>
-  <div class="form-card">
+  <div class="form-card" id="cf-contacto">
     <h3>Contacto e Identificación</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required inputmode="tel" value="${v(c,'telefono')}"></div>
@@ -1810,7 +1831,7 @@ function buildMoralFields(c){
   const pre = (!c && prefillName) ? parsePrefillName() : null;
   const pv  = (key, def='') => c ? v(c,key,def) : (pre ? (pre[key]||def) : def);
   return `
-  <div class="form-card">
+  <div class="form-card" id="cf-empresa">
     <h3>Datos de la Empresa</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group" style="grid-column:span 2"><label for="f-razon">Denominación o Razón Social <span class="req">*</span></label><input class="form-control" id="f-razon" required value="${pv('razonSocial')}"></div>
@@ -1821,7 +1842,7 @@ function buildMoralFields(c){
       <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
     </div>
   </div>
-  <div class="form-card">
+  <div class="form-card" id="cf-domicilio">
     <h3>Domicilio de la Empresa</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group" style="grid-column:span 2"><label for="f-calle">Calle, Avenida o Vía <span class="req">*</span></label><input class="form-control" id="f-calle" required value="${v(c,'calle')}"></div>
@@ -1835,7 +1856,7 @@ function buildMoralFields(c){
       <div class="form-group"><label for="f-pais">País <span class="req">*</span></label><input class="form-control" id="f-pais" required value="${v(c,'pais','México')}"></div>
     </div>
   </div>
-  <div class="form-card">
+  <div class="form-card" id="cf-contacto">
     <h3>Contacto</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required inputmode="tel" value="${v(c,'telefono')}"></div>
@@ -1845,7 +1866,7 @@ function buildMoralFields(c){
       <div class="form-group"><label for="f-correo">Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
     </div>
   </div>
-  <div class="form-card">
+  <div class="form-card" id="cf-representante">
     <h3>Representante Legal</h3>
     <div class="form-grid form-grid-3">
       <div class="form-group"><label for="f-rep-nombres">Nombre(s) <span class="req">*</span></label><input class="form-control" id="f-rep-nombres" required value="${v(c,'repNombres')}"></div>
