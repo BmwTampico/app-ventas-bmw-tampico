@@ -47,7 +47,7 @@ body.theme-light {
 }
 body.theme-light .clients-table tr:hover td { background: #f0f5ff; }
 body.theme-light .search-item:hover { background: #f0f5ff; }
-body.theme-light .tipo-fisica { background: #ede9fe; color: #6d28d9; }
+body.theme-light .tipo-fisica { background: #e2e8f0; color: #475569; }
 body.theme-light .tipo-moral  { background: #e0f2fe; color: #0369a1; }
 body.theme-light .role-admin    { background: #dbeafe; color: #1d4ed8; }
 body.theme-light .role-gerente  { background: #dcfce7; color: #15803d; }
@@ -154,11 +154,14 @@ input,select,textarea{font-family:inherit}
 /* ===== CLIENTS TABLE ===== */
 .clients-table{width:100%;border-collapse:collapse}
 .clients-table th{text-align:left;font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.clients-table th.th-sortable{cursor:pointer;user-select:none}
+@media (hover:hover) and (pointer:fine){ .clients-table th.th-sortable:hover{color:var(--text)} }
+.clients-table th.th-sortable .sort-arrow{color:var(--blue-light);margin-left:2px}
 .clients-table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)}
 .clients-table tr:last-child td{border-bottom:none}
 .clients-table tr:hover td{background:#1a2d42;transition:background .15s}
 .badge-tipo{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.tipo-fisica{background:#1e1a3f;color:#a78bfa}
+.tipo-fisica{background:#1c2b3a;color:#8a9bb0}
 .tipo-moral{background:#172a3a;color:#38bdf8}
 .empty-state{text-align:center;padding:48px 24px;color:var(--gray)}
 .empty-state svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
@@ -1162,6 +1165,48 @@ function _buildMyClientsRows(clients){
   }).join('');
 }
 
+let _clientSort = { my: {key:'fecha', dir:'desc'}, all: {key:'fecha', dir:'desc'} };
+
+function _clientSortValue(c, key){
+  if(key==='nombre') return (_clientNameRfc(c).name||'').toLowerCase();
+  if(key==='vendedor') return (c.vendedorNombre||'').toLowerCase();
+  return c.fechaRegistro ? new Date(c.fechaRegistro).getTime() : 0;
+}
+
+function _sortArrow(kind, key){
+  const state = _clientSort[kind];
+  if(state.key!==key) return '';
+  return state.dir==='asc' ? ' ▲' : ' ▼';
+}
+
+function _sortTh(kind, key, label){
+  return `<th class="th-sortable" onclick="sortClientsTable('${kind}','${key}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'){sortClientsTable('${kind}','${key}')}">${label}<span class="sort-arrow" id="sort-arrow-${kind}-${key}">${_sortArrow(kind,key)}</span></th>`;
+}
+
+function _updateClientSortHeaders(kind){
+  const keys = kind==='my' ? ['nombre','fecha'] : ['nombre','vendedor','fecha'];
+  keys.forEach(k=>{
+    const el = document.getElementById(`sort-arrow-${kind}-${k}`);
+    if(el) el.textContent = _sortArrow(kind,k);
+  });
+}
+
+function sortClientsTable(kind, key){
+  const state = _clientSort[kind];
+  if(state.key===key) state.dir = state.dir==='asc' ? 'desc' : 'asc';
+  else { state.key = key; state.dir = key==='fecha' ? 'desc' : 'asc'; }
+  const list = kind==='my' ? _myClientsFiltered : _allClientsFiltered;
+  const dir = state.dir==='asc' ? 1 : -1;
+  list.sort((a,b)=>{
+    const va = _clientSortValue(a,key), vb = _clientSortValue(b,key);
+    if(va<vb) return -1*dir;
+    if(va>vb) return 1*dir;
+    return 0;
+  });
+  if(kind==='my') _renderMyClientsTable(); else _renderAllClientsTable();
+  _updateClientSortHeaders(kind);
+}
+
 const PAGE_SIZE = 25;
 let _myClientsAll = [];
 let _myClientsFiltered = [];
@@ -1199,6 +1244,7 @@ function filterMyClients(query){
 }
 
 function renderMyClients(){
+  _clientSort.my = {key:'fecha', dir:'desc'};
   _myClientsAll = [...getVisibleClients()].sort((a,b)=>new Date(b.fechaRegistro)-new Date(a.fechaRegistro));
   _myClientsFiltered = _myClientsAll;
   _myClientsVisible = PAGE_SIZE;
@@ -1223,7 +1269,7 @@ function renderMyClients(){
     <p id="my-clients-count" style="font-size:14px;color:var(--gray);margin-bottom:20px">Mostrando ${Math.min(_myClientsVisible,_myClientsAll.length)} de ${_myClientsAll.length} cliente(s) registrados a tu nombre</p>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch">
       <table class="clients-table" style="min-width:640px">
-        <thead><tr><th>Nombre / Razón Social</th><th>RFC</th><th>Tipo</th><th>Teléfono</th><th>Correo Electrónico</th><th>Registro</th></tr></thead>
+        <thead><tr>${_sortTh('my','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th><th>Teléfono</th><th>Correo Electrónico</th>${_sortTh('my','fecha','Registro')}</tr></thead>
         <tbody id="my-clients-tbody">${rows}</tbody>
       </table>
     </div>
@@ -1349,6 +1395,7 @@ function filterAllClients(query){
 
 function renderAllClients(){
   if(currentUser.role!=='administrador' && currentUser.role!=='gerente'){ navigate('dashboard'); return; }
+  _clientSort.all = {key:'fecha', dir:'desc'};
   _allClientsAll = [...(DB.get('ap_clients')||[])].sort((a,b)=>new Date(b.fechaRegistro)-new Date(a.fechaRegistro));
   _allClientsFiltered = _allClientsAll;
   _allClientsVisible = PAGE_SIZE;
@@ -1373,7 +1420,7 @@ function renderAllClients(){
     <p id="all-clients-count" style="font-size:14px;color:var(--gray);margin-bottom:20px">Mostrando ${Math.min(_allClientsVisible,_allClientsAll.length)} de ${_allClientsAll.length} cliente(s) registrados por todos los vendedores</p>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch">
       <table class="clients-table" style="min-width:640px">
-        <thead><tr><th>Nombre / Razón Social</th><th>RFC</th><th>Tipo</th><th>Vendedor</th><th>Teléfono</th><th>Correo Electrónico</th><th>Registro</th></tr></thead>
+        <thead><tr>${_sortTh('all','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th>${_sortTh('all','vendedor','Vendedor')}<th>Teléfono</th><th>Correo Electrónico</th>${_sortTh('all','fecha','Registro')}</tr></thead>
         <tbody id="all-clients-tbody">${rows}</tbody>
       </table>
     </div>
@@ -1492,7 +1539,7 @@ function renderClientForm(clientId){
           </div>
           <h4 class="form-subsection-title">Venta y entrega</h4>
           <div class="form-grid form-grid-3">
-            <div class="form-group"><label for="f-precio">Precio de Lista</label><input class="form-control" id="f-precio" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+            <div class="form-group"><label for="f-precio">Precio de Lista</label><input class="form-control" id="f-precio" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-pago">Forma de Pago</label>
               <select class="form-control" id="f-pago">
                 <option value="contado"        ${v(client,'formaPago','contado')==='contado'?'selected':''}>Contado</option>
@@ -1514,8 +1561,8 @@ function renderClientForm(clientId){
       <div class="form-step" id="form-step-finanzas" data-step="finanzas">
         <div class="vehicle-section">
           <div class="form-grid form-grid-3" style="margin-top:0;padding-top:0;border-top:none">
-            <div class="form-group"><label for="f-fsos">FSOS</label><input class="form-control" id="f-fsos" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'fsos',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
-            <div class="form-group"><label for="f-descuento">Descuento</label><input class="form-control" id="f-descuento" type="text" placeholder="$0" value="${fmtCurrencyVal(v(client,'descuento',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+            <div class="form-group"><label for="f-fsos">FSOS</label><input class="form-control" id="f-fsos" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'fsos',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+            <div class="form-group"><label for="f-descuento">Descuento</label><input class="form-control" id="f-descuento" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'descuento',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-subvencion">Monto Total <span style="font-size:11px;color:var(--blue-light);text-transform:none;letter-spacing:0">(automático)</span></label><input class="form-control valid" id="f-subvencion" type="text" readonly style="background:var(--navy2);cursor:default" value="${fmtCurrencyVal(v(client,'subvencion',''))}"></div>
           </div>
           <div class="form-grid form-grid-2" style="margin-top:16px;padding-top:16px;border-top:1px solid #1c4080">
@@ -1732,7 +1779,7 @@ function buildFisicaFields(c){
       <div class="form-group"><label for="f-colonia">Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
       <div class="form-group"><label for="f-numext">Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
       <div class="form-group"><label for="f-numint">Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
-      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
+      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" inputmode="numeric" value="${v(c,'cp')}"></div>
       <div class="form-group"><label for="f-municipio">Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
       <div class="form-group"><label for="f-ciudad">Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
       <div class="form-group"><label for="f-estado">Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
@@ -1742,9 +1789,9 @@ function buildFisicaFields(c){
   <div class="form-card">
     <h3>Contacto e Identificación</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
-      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
-      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
+      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required inputmode="tel" value="${v(c,'telefono')}"></div>
+      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" inputmode="tel" value="${v(c,'telefonoCasa')}"></div>
+      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" inputmode="tel" value="${v(c,'telefonoOficina')}"></div>
       <div class="form-group"><label for="f-ext">Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
       <div class="form-group"><label for="f-correo">Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
       <div class="form-group"><label for="f-id-nombre">Identificación Oficial</label>
@@ -1781,7 +1828,7 @@ function buildMoralFields(c){
       <div class="form-group"><label for="f-colonia">Colonia / Urbanización <span class="req">*</span></label><input class="form-control" id="f-colonia" required value="${v(c,'colonia')}"></div>
       <div class="form-group"><label for="f-numext">Número Exterior <span class="req">*</span></label><input class="form-control" id="f-numext" required value="${v(c,'numExterior')}"></div>
       <div class="form-group"><label for="f-numint">Número Interior</label><input class="form-control" id="f-numint" value="${v(c,'numInterior')}"></div>
-      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" value="${v(c,'cp')}"></div>
+      <div class="form-group"><label for="f-cp">Código Postal <span class="req">*</span></label><input class="form-control" id="f-cp" required maxlength="5" inputmode="numeric" value="${v(c,'cp')}"></div>
       <div class="form-group"><label for="f-municipio">Municipio <span class="req">*</span></label><input class="form-control" id="f-municipio" required value="${v(c,'municipio')}"></div>
       <div class="form-group"><label for="f-ciudad">Ciudad / Entidad Federativa <span class="req">*</span></label><input class="form-control" id="f-ciudad" required value="${v(c,'ciudad')}"></div>
       <div class="form-group"><label for="f-estado">Estado <span class="req">*</span></label><input class="form-control" id="f-estado" required value="${v(c,'estado')}"></div>
@@ -1791,9 +1838,9 @@ function buildMoralFields(c){
   <div class="form-card">
     <h3>Contacto</h3>
     <div class="form-grid form-grid-3">
-      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required value="${v(c,'telefono')}"></div>
-      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" value="${v(c,'telefonoCasa')}"></div>
-      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" value="${v(c,'telefonoOficina')}"></div>
+      <div class="form-group"><label for="f-tel">Teléfono Celular (con lada) <span class="req">*</span></label><input class="form-control" id="f-tel" required inputmode="tel" value="${v(c,'telefono')}"></div>
+      <div class="form-group"><label for="f-tel-casa">Tel. Casa</label><input class="form-control" id="f-tel-casa" inputmode="tel" value="${v(c,'telefonoCasa')}"></div>
+      <div class="form-group"><label for="f-tel-ofic">Tel. Oficina</label><input class="form-control" id="f-tel-ofic" inputmode="tel" value="${v(c,'telefonoOficina')}"></div>
       <div class="form-group"><label for="f-ext">Extensión</label><input class="form-control" id="f-ext" value="${v(c,'extension')}"></div>
       <div class="form-group"><label for="f-correo">Correo Electrónico <span class="req">*</span></label><input class="form-control" id="f-correo" type="email" required value="${v(c,'correo')}"></div>
     </div>
@@ -3299,13 +3346,18 @@ const ACTIVITY_PAGE_SIZE = 30;
 let _activityVisible = ACTIVITY_PAGE_SIZE;
 
 function _renderActivityList(){
-  const log = DB.get('ap_activity_log')||[];
+  let log = DB.get('ap_activity_log')||[];
+  const total = log.length;
+  if(_activityFilterUser) log = log.filter(l=>l.userName===_activityFilterUser);
+  if(_activityFilterRole) log = log.filter(l=>l.userRole===_activityFilterRole);
   const slice = log.slice(0, _activityVisible);
   const wrap = document.getElementById('activity-list');
   if(!wrap) return;
 
-  if(log.length===0){
+  if(total===0){
     wrap.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p>Aún no hay actividad registrada</p></div>`;
+  } else if(log.length===0){
+    wrap.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><p>Ningún resultado con este filtro</p></div>`;
   } else {
     wrap.innerHTML = slice.map(item=>{
       const ic = _activityIcon(item.action);
@@ -3352,10 +3404,16 @@ function clearActivityLog(){
   });
 }
 
+let _activityFilterUser = '';
+let _activityFilterRole = '';
+
 function renderActivityLog(){
   if(currentUser.role!=='administrador' && currentUser.role!=='gerente'){ navigate('dashboard'); return; }
   _activityVisible = ACTIVITY_PAGE_SIZE;
+  _activityFilterUser = '';
+  _activityFilterRole = '';
   const log = DB.get('ap_activity_log')||[];
+  const users = [...new Set(log.map(l=>l.userName).filter(Boolean))].sort();
 
   document.getElementById('app-content').innerHTML = `
     <div class="breadcrumb">
@@ -3365,12 +3423,31 @@ function renderActivityLog(){
       <h2 style="font-size:20px;font-weight:800;color:var(--white)">Actividad Reciente</h2>
       ${log.length>0 ? `<button class="btn btn-secondary btn-sm" onclick="clearActivityLog()" style="color:var(--red)">Borrar historial</button>` : ''}
     </div>
-    <p style="font-size:14px;color:var(--gray);margin-bottom:20px">Registro de acciones importantes realizadas en el sistema (clientes, documentos, usuarios y contraseñas)</p>
+    <p style="font-size:14px;color:var(--gray);margin-bottom:14px">Registro de acciones importantes realizadas en el sistema (clientes, documentos, usuarios y contraseñas)</p>
+    ${log.length>0 ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <select class="form-control" id="activity-filter-user" style="width:auto;min-width:180px" onchange="filterActivityLog()" aria-label="Filtrar por usuario">
+        <option value="">Todos los usuarios</option>
+        ${users.map(u=>`<option value="${u}">${u}</option>`).join('')}
+      </select>
+      <select class="form-control" id="activity-filter-role" style="width:auto;min-width:150px" onchange="filterActivityLog()" aria-label="Filtrar por rol">
+        <option value="">Todos los roles</option>
+        <option value="vendedor">Vendedor</option>
+        <option value="gerente">Gerente General</option>
+        <option value="administrador">Administrador</option>
+      </select>
+    </div>` : ''}
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 20px">
       <div id="activity-list"></div>
     </div>
     <div id="activity-load-more-wrap" style="display:flex;justify-content:center;margin-top:18px"></div>`;
 
+  _renderActivityList();
+}
+
+function filterActivityLog(){
+  _activityFilterUser = document.getElementById('activity-filter-user').value;
+  _activityFilterRole = document.getElementById('activity-filter-role').value;
+  _activityVisible = ACTIVITY_PAGE_SIZE;
   _renderActivityList();
 }
 
@@ -3384,7 +3461,7 @@ function roleSelectorHtml(selectedRole, idPrefix){
   if(currentUser.role!=='administrador') roles = roles.filter(r=>r.id!=='administrador');
   return `<div style="display:grid;grid-template-columns:repeat(${roles.length},1fr);gap:10px">
     ${roles.map(r=>`
-      <label for="new-user-name" style="cursor:pointer">
+      <label style="cursor:pointer">
         <input type="radio" name="${idPrefix}-role" value="${r.id}" ${r.id===selectedRole?'checked':''} style="display:none" onchange="updateRoleSelection('${idPrefix}')">
         <div id="${idPrefix}-role-${r.id}" style="border:2px solid ${r.id===selectedRole?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px 8px;text-align:center;font-size:13px;font-weight:${r.id===selectedRole?'700':'600'};color:${r.id===selectedRole?'var(--blue-light)':'var(--text)'};background:${r.id===selectedRole?'rgba(28,105,212,0.12)':'transparent'};transition:all .15s">
           ${r.label}
@@ -3438,7 +3515,7 @@ function openNewUser(){
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <label for="edit-user-name" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
+        <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</span>
         ${roleSelectorHtml('vendedor','new-user')}
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px">
@@ -3557,7 +3634,7 @@ function openEditUser(userId){
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <label for="reassign-mode" style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</label>
+        <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px">Nivel de permisos</span>
         ${roleSelectorHtml(u.role,'edit-user')}
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:6px">
@@ -4112,12 +4189,24 @@ loadTheme();
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
   if((localStorage.getItem('ap_theme')||'dark')==='auto') applyTheme('auto');
 });
-// Cierre de sesión automático por inactividad (5 minutos).
+// Cierre de sesión automático por inactividad (5 minutos), con aviso previo
+// al minuto 4 para que el vendedor pueda extender la sesión sin perder los
+// datos capturados (ej. formulario de cliente sin guardar).
+const INACTIVITY_WARNING_MS = 4 * 60 * 1000;
 const INACTIVITY_MS = 5 * 60 * 1000;
+let _inactivityWarningTimer = null;
 let _inactivityTimer = null;
 function resetInactivityTimer(){
   if(!currentUser) return;
+  clearTimeout(_inactivityWarningTimer);
   clearTimeout(_inactivityTimer);
+  _inactivityWarningTimer = setTimeout(()=>{
+    if(!currentUser) return;
+    const msg = _clientFormDirty
+      ? 'Tu sesión está por cerrarse por inactividad y perderías los datos del formulario sin guardar.'
+      : 'Tu sesión está por cerrarse por inactividad.';
+    toast(msg, 'error', { actionLabel:'Sigo aquí', onAction: resetInactivityTimer, duration: INACTIVITY_MS - INACTIVITY_WARNING_MS });
+  }, INACTIVITY_WARNING_MS);
   _inactivityTimer = setTimeout(async ()=>{
     if(!currentUser) return;
     await doLogout();
