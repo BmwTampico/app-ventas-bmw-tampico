@@ -160,6 +160,7 @@ input,select,textarea{font-family:inherit}
 .clients-table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)}
 .clients-table tr:last-child td{border-bottom:none}
 .clients-table tr:hover td{background:#1a2d42;transition:background .15s}
+.clients-table tr[role="button"]:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
 .badge-tipo{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
 .tipo-fisica{background:#1c2b3a;color:#8a9bb0}
 .tipo-moral{background:#172a3a;color:#38bdf8}
@@ -223,6 +224,15 @@ body.theme-light .vehicle-section h3{color:var(--blue2)}
 
 /* ===== DOCUMENT VIEWER ===== */
 .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.hidden-docs-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px}
+.hidden-docs-section summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--text2);list-style:none}
+.hidden-docs-section summary::-webkit-details-marker{display:none}
+.hidden-docs-section summary::before{content:'▸ ';color:var(--text2)}
+.hidden-docs-section[open] summary::before{content:'▾ '}
+.hidden-docs-list{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.hidden-doc-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.hidden-doc-row:first-child{border-top:none;padding-top:0}
+.hidden-doc-title{font-size:14px;color:var(--text)}
 .doc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color .2s;position:relative}
 .doc-card-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
 .doc-icon{width:44px;height:44px;background:#0d2a4a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1038,7 +1048,7 @@ function renderDashboard(){
       const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
       const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
       const fecha = new Date(c.fechaRegistro).toLocaleDateString('es-MX');
-      clientRows+=`<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})">
+      clientRows+=`<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <td><strong>${name}</strong></td>
         <td>${rfc||'—'}</td>
         <td><span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span></td>
@@ -1157,7 +1167,7 @@ function _buildMyClientsRows(clients){
   return clients.map(c=>{
     const {name, rfc} = _clientNameRfc(c);
     const fecha = new Date(c.fechaRegistro).toLocaleDateString('es-MX');
-    return `<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})">
+    return `<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
       <td><strong>${name}</strong></td>
       <td>${rfc||'—'}</td>
       <td><span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span></td>
@@ -1348,7 +1358,7 @@ function _buildAllClientsRows(clients){
   return clients.map(c=>{
     const {name, rfc} = _clientNameRfc(c);
     const fecha = new Date(c.fechaRegistro).toLocaleDateString('es-MX');
-    return `<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})">
+    return `<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
       <td><strong>${name}</strong></td>
       <td>${rfc||'—'}</td>
       <td><span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span></td>
@@ -1681,6 +1691,13 @@ const REQUIRED_FIELDS_MORAL = [
   {id:'f-rep-fnac',   label:'Fecha de Nacimiento del Representante'},
   {id:'f-rep-curp',   label:'CURP del Representante'},
 ];
+// El VIN y el Precio de Lista aparecen en todo documento de venta generado
+// (compraventa, entrega, etc.) — a diferencia de los demás campos del paso
+// Vehículo, dejarlos vacíos produce documentos legales incompletos.
+const REQUIRED_FIELDS_VEHICULO = [
+  {id:'f-niv',    label:'VIN / No. de Serie'},
+  {id:'f-precio', label:'Precio de Lista'},
+];
 
 // Divide el formulario de cliente en pasos navegables (Cliente/Vehículo/
 // Finanzas/Entrega) mostrando solo uno a la vez vía CSS — no quita ningún
@@ -1703,9 +1720,9 @@ function goToFormStep(step){
 // validación falla mientras el usuario está en otro paso, primero
 // cambiamos a ese paso para que el foco visual realmente funcione
 // (un elemento con display:none no se puede enfocar).
-function _focusStepField(el){
+function _focusStepField(el, step='cliente'){
   if(!el) return;
-  goToFormStep('cliente');
+  goToFormStep(step);
   el.focus();
 }
 
@@ -1725,16 +1742,23 @@ function switchTipo(tipo){
   _updateStepCompletionBadge();
 }
 
-// Marca en la pill "1. Cliente" cuántos campos requeridos faltan por
-// llenar, para que saltar directo a otro paso no sea una sorpresa al
-// intentar guardar — se actualiza en vivo mientras el vendedor escribe.
+// Marca en las pills "1. Cliente" y "2. Vehículo" cuántos campos requeridos
+// faltan por llenar, para que saltar directo a otro paso no sea una
+// sorpresa al intentar guardar — se actualiza en vivo mientras el
+// vendedor escribe.
 function _updateStepCompletionBadge(){
-  const pill = document.querySelector('.step-pill[data-step="cliente"]');
+  _setStepBadge('cliente', activeTipo==='fisica' ? REQUIRED_FIELDS_FISICA : REQUIRED_FIELDS_MORAL);
+  _setStepBadge('vehiculo', REQUIRED_FIELDS_VEHICULO);
+}
+
+function _setStepBadge(step, required){
+  const pill = document.querySelector(`.step-pill[data-step="${step}"]`);
   if(!pill) return;
-  const required = activeTipo==='fisica' ? REQUIRED_FIELDS_FISICA : REQUIRED_FIELDS_MORAL;
   const missing = required.filter(f=>{
     const el = document.getElementById(f.id);
-    return !el || !el.value.trim();
+    if(!el) return true;
+    if(f.id==='f-precio') return parseCurrency('f-precio') <= 0;
+    return !el.value.trim();
   }).length;
   let badge = pill.querySelector('.step-pill-badge');
   if(missing>0){
@@ -1990,6 +2014,24 @@ async function saveClient(e, existingId){
       repIdNombre:g('f-rep-id-nombre'), repIdAutoridad:g('f-rep-id-aut'), repIdFolio:g('f-rep-id-folio'),
     });
   }
+
+  // VIN y Precio aparecen en todos los documentos de venta generados —
+  // se validan aparte porque viven en el paso "Vehículo", no "Cliente".
+  const vehiculoMissing = [];
+  for(const f of REQUIRED_FIELDS_VEHICULO){
+    const el = document.getElementById(f.id);
+    const empty = f.id==='f-precio' ? parseCurrency('f-precio')<=0 : (!el || !el.value.trim());
+    if(empty){
+      vehiculoMissing.push(f);
+      if(el) el.classList.add('invalid');
+    }
+  }
+  if(vehiculoMissing.length){
+    _focusStepField(document.getElementById(vehiculoMissing[0].id), 'vehiculo');
+    toast(_missingFieldsMsg(vehiculoMissing), 'error');
+    return;
+  }
+
   Object.assign(client,{
     calle:g('f-calle'), numExterior:g('f-numext'), numInterior:g('f-numint'),
     colonia:g('f-colonia'), municipio:g('f-municipio'), ciudad:g('f-ciudad'),
@@ -2275,9 +2317,11 @@ function renderDocuments(clientId){
 
   const hiddenKey = `ap_hidden_${clientId}`;
   const hidden = DB.get(hiddenKey)||[];
-  // Un documento ya impreso se oculta automáticamente de la lista; solo
-  // vuelve a aparecer si se editan y guardan los datos del cliente.
+  // Un documento ya impreso se oculta automáticamente de la lista, pero
+  // sigue accesible desde "Documentos ya impresos" con un botón directo
+  // para reimprimirlo, sin necesitar editar y guardar todo el cliente.
   const visibleDocs = docs.filter(d=>!hidden.includes(d.id));
+  const hiddenDocs = docs.filter(d=>hidden.includes(d.id));
 
   let cards = '';
   let bulkBarHtml = `<div class="bulk-bar">
@@ -2290,7 +2334,7 @@ function renderDocuments(clientId){
     cards = `<div class="empty-state" style="grid-column:1/-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17l-5-5"/></svg>
         <p style="font-weight:600;color:var(--text);margin-bottom:6px">Ya se generaron todos los documentos de este cliente</p>
-        <p>Si necesitas volver a imprimir alguno, edita y guarda los datos del cliente para que reaparezca en la lista.</p>
+        <p>Si necesitas volver a imprimir alguno, ábrelo en "Documentos ya impresos" abajo.</p>
       </div>`;
   } else {
     cards = visibleDocs.map(d=>{
@@ -2309,6 +2353,18 @@ function renderDocuments(clientId){
     }).join('');
   }
 
+  const hiddenSectionHtml = hiddenDocs.length===0 ? '' : `
+    <details class="hidden-docs-section">
+      <summary>Documentos ya impresos (${hiddenDocs.length})</summary>
+      <div class="hidden-docs-list">
+        ${hiddenDocs.map(d=>`
+          <div class="hidden-doc-row">
+            <span class="hidden-doc-title">${d.title}</span>
+            <button class="btn btn-secondary btn-sm" onclick="runAsync(this,'Reimprimiendo...',()=>undoMarkPrinted(['${d.id}'],'${clientId}'))">${_btnIcon('<path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-2 4H8v-6h8v6z"/>')} Reimprimir</button>
+          </div>`).join('')}
+      </div>
+    </details>`;
+
   document.getElementById('app-content').innerHTML=`
     <div class="breadcrumb">
       <a class="back-btn" onclick="navigate('client-detail',{clientId:'${clientId}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ${name}</a>
@@ -2316,7 +2372,8 @@ function renderDocuments(clientId){
     <h2 style="font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px">Documentos</h2>
     <p style="font-size:14px;color:var(--gray);margin-bottom:20px">Cliente: <strong style="color:var(--text)">${name}</strong></p>
     ${bulkBarHtml}
-    <div class="docs-grid">${cards}</div>`;
+    <div class="docs-grid">${cards}</div>
+    ${hiddenSectionHtml}`;
 }
 
 // Carga diferida de las plantillas de documentos (templates.js, ~7 MB).
@@ -3313,7 +3370,7 @@ function renderVendorClients(vendorId){
       const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
       const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
       const fecha = new Date(c.fechaRegistro).toLocaleDateString('es-MX');
-      rows+=`<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})">
+      rows+=`<tr style="cursor:pointer" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <td><strong>${name}</strong></td>
         <td>${rfc||'—'}</td>
         <td><span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span></td>
