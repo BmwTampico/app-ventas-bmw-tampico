@@ -3305,6 +3305,9 @@ function buildDocHtml(docId, c){
     const nameBSI = c.tipo==='fisica'
       ? `${(c.nombres||'')} ${(c.apellidoPaterno||'')} ${(c.apellidoMaterno||'')}`.trim().toUpperCase()
       : (c.razonSocial||'').toUpperCase();
+    const rfcBSI = (c.tipo==='fisica' ? c.rfc : c.rfcMoral) || '';
+    const numExtBSI = `${c.numExterior||''}${c.numInterior?' Int.'+c.numInterior:''}`.trim();
+    const modeloBSI = `${c.vehiculoAnio||''} ${c.vehiculoSubmarca||''}`.trim();
     return `<div>
       <style>
         @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
@@ -3314,7 +3317,19 @@ function buildDocHtml(docId, c){
       </style>
       <div class="bsi-wrapper"><div class="bsi-page">
         <img src="data:image/png;base64,${BSI_PLUS_BG}" alt="">
-        ${bsif(490,290,660,nameBSI,10)}
+        ${bsif(585,210,200,todayShort)}
+        ${bsif(120,298,950,nameBSI,10)}
+        ${bsif(205,344,395,(c.calle||'').toUpperCase(),9)}
+        ${bsif(680,344,105,numExtBSI.toUpperCase(),9)}
+        ${bsif(890,344,225,(c.colonia||'').toUpperCase(),9)}
+        ${bsif(205,388,230,(c.ciudad||'').toUpperCase(),9)}
+        ${bsif(530,388,255,(c.estado||'').toUpperCase(),9)}
+        ${bsif(910,388,205,c.cp||'',9)}
+        ${bsif(160,430,275,rfcBSI.toUpperCase(),9)}
+        ${bsif(560,430,225,c.telefono||'',9)}
+        ${bsif(205,474,230,modeloBSI.toUpperCase(),9)}
+        ${bsif(530,474,255,(c.vehiculoMarca||'BMW').toUpperCase(),9)}
+        ${bsif(365,516,420,(c.vehiculoNIV||'').toUpperCase(),9)}
       </div></div>
     </div>`;
   }
