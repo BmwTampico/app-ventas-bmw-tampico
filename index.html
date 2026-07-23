@@ -2307,6 +2307,7 @@ function renderDocuments(clientId){
     {id:'amda-pf',    title:'Identificación AMDA — Persona Física', desc:'Formato AMDA oficial de identificación del cliente'},
     {id:'entregas',  title:'Vale de Salida — Formato de Entregas', desc:'Vale de salida del vehículo con fecha, hora y datos de factura'},
     {id:'salida-unidad', title:'Salida de Unidad', desc:'Formato de salida de unidad con datos del cliente y del vehículo'},
+    {id:'anexo4', title:'Anexo 4 — Certificado de Uso Final', desc:'Certificado de uso final y nexos con Rusia y Bielorrusia'},
     {id:'cv-contado', title:'Compraventa al Contado', desc:'Contrato de compraventa de vehículo nuevo — Pago de contado'},
     {id:'cv-tasa',    title:'Compraventa a Tasa Fija / Financiera BMW', desc:'Contrato de compraventa de vehículo nuevo — Financiamiento'},
     {id:'checklist',  title:'Check List de Ventas', desc:'Lista de verificación de documentos para la entrega del vehículo'},
@@ -2320,6 +2321,7 @@ function renderDocuments(clientId){
     {id:'amda-pm',    title:'Identificación AMDA — Persona Moral', desc:'Formato AMDA oficial de identificación del cliente'},
     {id:'entregas',  title:'Vale de Salida — Formato de Entregas', desc:'Vale de salida del vehículo con fecha, hora y datos de factura'},
     {id:'salida-unidad', title:'Salida de Unidad', desc:'Formato de salida de unidad con datos del cliente y del vehículo'},
+    {id:'anexo4', title:'Anexo 4 — Certificado de Uso Final', desc:'Certificado de uso final y nexos con Rusia y Bielorrusia'},
     {id:'cv-contado', title:'Compraventa al Contado', desc:'Contrato de compraventa de vehículo nuevo — Pago de contado'},
     {id:'cv-tasa',    title:'Compraventa a Tasa Fija / Financiera BMW', desc:'Contrato de compraventa de vehículo nuevo — Financiamiento'},
     {id:'bsi-plus',   title:'BSI Plus', desc:'Contrato BMW Service Inclusive Plus'},
@@ -2524,7 +2526,7 @@ async function printSelected(clientId){
 }
 
 function docTitle(id){
-  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW','salida-unidad':'Salida de Unidad'};
+  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW','salida-unidad':'Salida de Unidad','anexo4':'Anexo 4 — Certificado de Uso Final'};
   return m[id]||id;
 }
 
@@ -2905,6 +2907,48 @@ function buildDocHtml(docId, c){
 
       <div class="su-recibi">Recibí de Conformidad: <span class="su-fill"></span></div>
       <div class="su-recibi-sub">(Número y firma)</div>
+    </div>`;
+  }
+
+  if(docId==='anexo4'){
+    // Recreado en HTML/CSS a partir del Anexo 4 (Word) tal cual, con el
+    // mismo texto legal — solo se llenan Cliente y Dirección con los datos
+    // ya capturados. Igual para Persona Física y Moral.
+    const nameA4 = c.tipo==='moral' ? (c.razonSocial||'') : name;
+    return `<div class="a4-wrap">
+      <style>
+        @media print{@page{size:letter portrait;margin:20mm}body,html{margin:0;padding:0}}
+        .a4-wrap{width:100%;max-width:560px;margin:0 auto;font-family:Arial,sans-serif;color:#111;font-size:12px;line-height:1.5}
+        .a4-field{display:flex;align-items:flex-end;margin-bottom:16px}
+        .a4-label{white-space:nowrap;padding-bottom:2px}
+        .a4-fill{flex:1;border-bottom:1px solid #000;padding-bottom:2px;min-height:15px;margin-left:4px;overflow-wrap:break-word}
+        .a4-title{text-align:center;font-size:14px;font-weight:bold;margin:24px 0 18px}
+        .a4-p{margin-bottom:14px;text-align:justify}
+        .a4-sig{margin-top:44px}
+        .a4-sig-line{border-bottom:1px solid #000;width:80%;margin-bottom:4px}
+        .a4-sig-label{font-size:11px;color:#333;margin-bottom:28px}
+      </style>
+
+      <span class="a4-field"><span class="a4-label">Cliente: </span><span class="a4-fill">${nameA4}</span></span>
+      <span class="a4-field"><span class="a4-label">Dirección: </span><span class="a4-fill">${domicilio}</span></span>
+
+      <div class="a4-title">CERTIFICADO DE USO FINAL DEL PEDIDO NO: <span style="font-weight:normal">_______________</span></div>
+
+      <p class="a4-p">El Cliente certifica y confirma que entiende, acepta y reconoce que:</p>
+      <p class="a4-p">El (los) producto (s) vendido (s) bajo el número de pedido anterior pueden estar sujetos a las Regulaciones de Control y Sanciones de Exportación de la Unión Europea, Estados Unidos y/o Reino Unido.</p>
+      <p class="a4-p">Dicho producto no debe ser exportado (incluyendo su uso, venta, suministro, transferencia) directa o indirectamente a Rusia o Bielorrusia o cualquier otro lugar enumerado en la sección 5.</p>
+      <p class="a4-p">Al aceptar la entrega del producto, el Cliente acepta cumplir con todas las Regulaciones de Control de Exportación y Sanciones aplicables en la Unión Europea, Estados Unidos y/o Reino Unido.</p>
+      <p class="a4-p">Cualquier reexportación del producto por parte del Cliente podría estar sujeta a los Reglamentos de Control y Sanciones de Exportación de la Unión Europea, Estados Unidos y/o Reino Unido. Es responsabilidad del Cliente cumplir con dichos controles y/o regulaciones, siempre que estos estén vigentes, antes de dicha reexportación.</p>
+      <p class="a4-p">Bajo ninguna circunstancia el producto o parte del mismo va a ser reexportado por el Cliente a Cuba, Irán, Corea del Norte, Sudán / Sudán del Sur, Siria, Bielorrusia, Rusia y las regiones ocupadas de Ucrania: la Región de Crimea de Ucrania, la llamada República Popular de Luhansk, la llamada República Popular de Donetsk y las zonas no controladas por el gobierno de las regiones de Zaporiyia y Jersón.</p>
+
+      <div class="a4-sig">
+        <div class="a4-sig-line"></div>
+        <div class="a4-sig-label">Firma del Cliente</div>
+        <div class="a4-sig-line"></div>
+        <div class="a4-sig-label">Nombre del Cliente y Cargo (cuando se trate de personas morales)</div>
+        <div class="a4-sig-line"></div>
+        <div class="a4-sig-label">Lugar y Fecha de Firma</div>
+      </div>
     </div>`;
   }
 
