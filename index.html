@@ -2831,6 +2831,7 @@ function buildDocHtml(docId, c){
         .su-equipo-col{flex:1;display:flex;flex-direction:column;gap:6px}
         .su-check{display:flex;align-items:center;gap:6px;font-size:11px}
         .su-check .box{width:11px;height:11px;border:1px solid #000;flex-shrink:0}
+        .su-check-line{flex:1;border-bottom:1px solid #000;min-height:11px;align-self:stretch}
         .su-obs-label{font-size:12px;margin-bottom:4px}
         .su-obs-line{border-bottom:1px solid #000;min-height:18px;margin-bottom:10px}
         .su-signatures{display:flex;justify-content:space-between;margin-top:50px}
@@ -2879,9 +2880,9 @@ function buildDocHtml(docId, c){
         <div class="su-equipo-col">
           <div class="su-check"><span class="box"></span>Tapetes</div>
           <div class="su-check"><span class="box"></span>Otros (especificar)</div>
-          <div class="su-check"><span class="box"></span></div>
-          <div class="su-check"><span class="box"></span></div>
-          <div class="su-check"><span class="box"></span></div>
+          <div class="su-check"><span class="box"></span><span class="su-check-line"></span></div>
+          <div class="su-check"><span class="box"></span><span class="su-check-line"></span></div>
+          <div class="su-check"><span class="box"></span><span class="su-check-line"></span></div>
         </div>
       </div>
 
