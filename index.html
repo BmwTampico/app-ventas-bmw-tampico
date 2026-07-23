@@ -1576,6 +1576,7 @@ function renderClientForm(clientId){
         <div class="vehicle-section">
           <div class="form-grid form-grid-3" style="margin-top:0;padding-top:0;border-top:none">
             <div class="form-group"><label for="f-fsos">FSOS</label><input class="form-control" id="f-fsos" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'fsos',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+            <div class="form-group"><label for="f-accesorios">Accesorios</label><input class="form-control" id="f-accesorios" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'accesorios',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-descuento">Descuento</label><input class="form-control" id="f-descuento" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'descuento',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-subvencion">Monto Total <span style="font-size:11px;color:var(--blue-light);text-transform:none;letter-spacing:0">(automático)</span></label><input class="form-control valid" id="f-subvencion" type="text" readonly style="background:var(--navy2);cursor:default" value="${fmtCurrencyVal(v(client,'subvencion',''))}"></div>
           </div>
@@ -1938,10 +1939,11 @@ function onCurrencyInput(el){
 }
 
 function calcMontoTotal(){
-  const precio    = parseCurrency('f-precio');
-  const fsos      = parseCurrency('f-fsos');
-  const descuento = parseCurrency('f-descuento');
-  const total     = precio + fsos - descuento;
+  const precio     = parseCurrency('f-precio');
+  const fsos       = parseCurrency('f-fsos');
+  const accesorios = parseCurrency('f-accesorios');
+  const descuento  = parseCurrency('f-descuento');
+  const total      = precio + fsos + accesorios - descuento;
   const el = document.getElementById('f-subvencion');
   if(el) el.value = total > 0 ? fmtCurrencyVal(total) : '';
 }
@@ -2048,7 +2050,7 @@ async function saveClient(e, existingId){
     entregaObservaciones:(document.getElementById('f-obs-entrega')||{value:''}).value,
     formaPago:g('f-pago'), cfdi:g('f-cfdi'),
     telefonoOficina:g('f-tel-ofic'),
-    fsos:parseCurrency('f-fsos'), descuento:parseCurrency('f-descuento'), subvencion:parseCurrency('f-subvencion'),
+    fsos:parseCurrency('f-fsos'), accesorios:parseCurrency('f-accesorios'), descuento:parseCurrency('f-descuento'), subvencion:parseCurrency('f-subvencion'),
     fuente:g('f-fuente'), vecesCompra:g('f-veces-compra'),
   });
 
@@ -2675,6 +2677,7 @@ function buildDocHtml(docId, c){
             <table class="pt">
               <tr><td style="width:62%"><b>Precio de Lista:</b></td><td>${$(c.vehiculoPrecio)}</td></tr>
               <tr><td><b>FSOS:</b></td><td>${$(c.fsos)}</td></tr>
+              <tr><td><b>Accesorios:</b></td><td>${$(c.accesorios)}</td></tr>
               <tr><td><b>1. Descuento:</b></td><td>${$(c.descuento)}</td></tr>
               <tr><td><b>Monto Total:</b></td><td><b>${$(c.subvencion)}</b></td></tr>
               <tr><td><b>a. Placas, Tenencia y Gestoría:</b></td><td>$___________</td></tr>
