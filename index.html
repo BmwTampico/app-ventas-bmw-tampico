@@ -2406,20 +2406,24 @@ async function saveClientNotas(clientId){
 // uploadAvatar) y las agrega al arreglo de fotos de la nota del cliente.
 async function onNotasPhotosSelected(clientId, input){
   const files = Array.from(input.files||[]).filter(f=>f.type.startsWith('image/'));
-  input.value = '';
-  if(!files.length) return;
+  if(!files.length){ input.value=''; return; }
   const client = cache.clients.find(c=>c.id===clientId);
-  if(!client) return;
+  if(!client){ input.value=''; return; }
   const badge = document.getElementById('notas-save-status');
   if(badge) badge.textContent = `Subiendo ${files.length>1?'fotos':'foto'}...`;
   const fotos = client.notasFotos || (client.notasFotos = []);
   for(const file of files){
     const path = `${clientId}/${uuid()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const { error } = await sb.storage.from('client-photos').upload(path, file, { contentType: file.type });
+    // No se limpia input.value antes de terminar de leer el archivo: en
+    // Safari, vaciar el <input type="file"> mientras la subida todavía está
+    // leyendo el Blob puede invalidarlo y la subida llega vacía al servidor
+    // ("No content provided").
+    const { error } = await sb.storage.from('client-photos').upload(path, file, { contentType: file.type || 'image/jpeg' });
     if(error){ toast('No se pudo subir una foto. '+_friendlyDbError(error,'onNotasPhotosSelected'),'error'); continue; }
     const { data } = sb.storage.from('client-photos').getPublicUrl(path);
     fotos.push({ path, url: data.publicUrl });
   }
+  input.value = '';
   await _persistClientNotas(clientId);
   const grid = document.getElementById('notas-fotos-grid');
   if(grid) grid.innerHTML = _notasFotosHtml(client);
