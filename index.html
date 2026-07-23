@@ -2803,7 +2803,7 @@ function buildDocHtml(docId, c){
     const nameSU = c.tipo==='moral' ? (c.razonSocial||'') : name;
     const modeloSU = `${c.vehiculoAnio||''} ${c.vehiculoSubmarca||''}`.trim();
     const vendedorSU = (()=>{const u=(DB.get('ap_users')||[]).find(u=>u.id===c.vendedorId);return u?u.name:'';})();
-    const suLine = (label, val, extra='') => `<span class="su-line">${label}${val?`<b>${val}</b>`:''}${extra}</span>`;
+    const suLine = (label, val, align='left') => `<span class="su-field"><span class="su-label">${label}</span><span class="su-fill" style="text-align:${align}">${val||''}</span></span>`;
     const equipo = ['Botiquín de Primeros Auxilios','Herramienta Completa','Triángulo de Señalización','Llanta y Gato de refacción','Luces'];
     const equipo2 = ['Manual de Servicio','Extintor','Compact Disc','Radio','Encendedor'];
     return `<div class="su-wrap">
@@ -2814,16 +2814,17 @@ function buildDocHtml(docId, c){
         .su-header img{width:46px;height:auto}
         .su-header b{font-size:14px}
         .su-title{text-align:center;font-size:18px;font-weight:bold;letter-spacing:.5px;margin-bottom:22px}
-        .su-line{display:block;border-bottom:1px solid #000;padding-bottom:2px;margin-bottom:14px;min-height:16px}
-        .su-line b{font-weight:normal}
+        .su-field{display:flex;align-items:flex-end;margin-bottom:14px;min-width:0}
+        .su-label{white-space:nowrap;padding-bottom:2px}
+        .su-fill{flex:1;border-bottom:1px solid #000;padding-bottom:2px;min-height:15px;margin-left:4px;overflow-wrap:break-word}
         .su-row{display:flex;gap:20px}
-        .su-row .su-line{flex:1}
+        .su-row .su-field{flex:1;margin-bottom:14px}
         .su-sub{font-size:10px;color:#444;margin-top:-10px;margin-bottom:14px}
         .su-sub-row{display:flex;gap:20px;margin-top:-12px;margin-bottom:14px}
         .su-sub-row span{flex:1;font-size:10px;color:#444}
         .su-section{text-align:center;font-size:14px;font-weight:bold;margin:20px 0 14px}
         .su-unit-row{display:flex;gap:16px;margin-bottom:14px}
-        .su-unit-row .su-line{flex:1}
+        .su-unit-row .su-field{flex:1;margin-bottom:0}
         .su-equipo{display:flex;gap:24px;margin-bottom:18px}
         .su-equipo-col{flex:1;display:flex;flex-direction:column;gap:6px}
         .su-check{display:flex;align-items:center;gap:6px;font-size:11px}
@@ -2834,14 +2835,14 @@ function buildDocHtml(docId, c){
         .su-sig{width:44%;text-align:center;border-top:1px solid #000;padding-top:4px;font-size:11px}
         .su-signatures2{display:flex;justify-content:space-between;margin-top:40px}
         .su-recibi{display:flex;align-items:flex-end;gap:8px;margin-top:40px;font-size:12px}
-        .su-recibi .su-line{flex:1;margin-bottom:0}
+        .su-recibi .su-fill{margin-bottom:0}
         .su-recibi-sub{text-align:center;font-size:10px;color:#444;margin-top:2px}
       </style>
 
       <div class="su-header"><img src="data:image/png;base64,${BMW_LOGO_B64}" alt=""><b>AutoPremium Tampico, S.A. de C.V.</b></div>
       <div class="su-title">SALIDA DE UNIDAD</div>
 
-      ${suLine('Lugar y Fecha: ', `${c.vehiculoLugar||'Tampico'}, ${todayShort}`)}
+      ${suLine('Lugar y Fecha: ', `${c.vehiculoLugar||'Tampico'}, ${todayShort}`, 'right')}
 
       <div class="su-row">
         ${suLine('Cliente: ', nameSU)}
@@ -2899,7 +2900,7 @@ function buildDocHtml(docId, c){
         <div class="su-sig">Gerente General</div>
       </div>
 
-      <div class="su-recibi">Recibí de Conformidad: <span class="su-line"></span></div>
+      <div class="su-recibi">Recibí de Conformidad: <span class="su-fill"></span></div>
       <div class="su-recibi-sub">(Número y firma)</div>
     </div>`;
   }
