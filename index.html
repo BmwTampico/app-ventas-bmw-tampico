@@ -1550,6 +1550,12 @@ function renderClientForm(clientId){
             <div class="form-group"><label for="f-niv">VIN / No. de Serie</label><input class="form-control" id="f-niv" placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
             <div class="form-group"><label for="f-motor">No. de Motor</label><input class="form-control" id="f-motor" value="${v(client,'vehiculoMotor','')}"></div>
             <div class="form-group"><label for="f-capacidad">Capacidad</label><input class="form-control" id="f-capacidad" placeholder="5 personas" value="${v(client,'vehiculoCapacidad','')}"></div>
+            <div class="form-group"><label for="f-condicion">Condición del Vehículo</label>
+              <select class="form-control" id="f-condicion">
+                <option value="nuevo"     ${v(client,'vehiculoCondicion','nuevo')==='nuevo'?'selected':''}>Nuevo</option>
+                <option value="seminuevo" ${v(client,'vehiculoCondicion','nuevo')==='seminuevo'?'selected':''}>Seminuevo</option>
+              </select>
+            </div>
           </div>
           <h4 class="form-subsection-title">Venta y entrega</h4>
           <div class="form-grid form-grid-3">
@@ -2045,6 +2051,7 @@ async function saveClient(e, existingId){
     vehiculoColor:g('f-color'), vehiculoAnio:g('f-anio'), vehiculoNIV:g('f-niv'),
     vehiculoMotor:g('f-motor'),
     vehiculoCapacidad:g('f-capacidad'), vehiculoPrecio:parseCurrency('f-precio'),
+    vehiculoCondicion:g('f-condicion'),
     vehiculoFechaEntrega:g('f-fecha-ent'), vehiculoLugar:g('f-lugar-ent'),
     enganche:parseCurrency('f-enganche'), montoFinanciar:parseCurrency('f-monto-financiar'),
     entregaFechaSalida:g('f-fecha-salida'), entregaHoraSalida:g('f-hora-salida'),
@@ -2662,8 +2669,8 @@ function buildDocHtml(docId, c){
       <table class="pt">
         <tr>
           <td style="width:8%"><b>Modelo:</b></td><td style="width:22%">${c.vehiculoSubmarca||'—'}</td>
-          <td style="width:7%"><b>Nuevo:</b></td><td style="width:4%">☑</td>
-          <td style="width:7%"><b>Usado:</b></td><td style="width:4%">☐</td>
+          <td style="width:7%"><b>Nuevo:</b></td><td style="width:4%">${c.vehiculoCondicion==='seminuevo'?'☐':'☑'}</td>
+          <td style="width:7%"><b>Usado:</b></td><td style="width:4%">${c.vehiculoCondicion==='seminuevo'?'☑':'☐'}</td>
           <td style="width:7%"><b>Marca:</b></td><td>${c.vehiculoMarca||'BMW'}</td>
           <td style="width:10%"><b>Año Modelo:</b></td><td>${c.vehiculoAnio||'—'}</td>
         </tr>
