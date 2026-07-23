@@ -299,6 +299,13 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .detail-field{margin-bottom:10px}
 .detail-field .lbl{font-size:11px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
 .detail-field .val{font-size:14px;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+.notas-card{background:var(--card);border:1px solid var(--border);border-left:3px solid #d4a72c;border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.notas-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.notas-head h4{display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin:0}
+.notas-hint{font-size:11px;color:var(--gray)}
+.notas-textarea{width:100%;min-height:90px;resize:vertical;background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;line-height:1.5}
+.notas-textarea:focus{outline:none;border-color:#d4a72c}
+.notas-status{font-size:11px;color:var(--gray);margin-top:8px;min-height:14px}
 
 /* ===== USER MGMT ===== */
 .user-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px}
@@ -2151,7 +2158,7 @@ async function saveClient(e, existingId){
   const nombreLog = client.tipo==='fisica'?(client.nombres+' '+client.apellidoPaterno+' '+client.apellidoMaterno):client.razonSocial;
   if(existingId){
     const prev = cache.clients.find(c=>c.id===existingId) || {};
-    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre});
+    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre, notas: prev.notas});
     // Los documentos cambian si los datos del cliente cambian: se reinician
     // tanto el estado de "impreso" como el de "oculto" para que vuelvan a
     // aparecer en la lista y puedan generarse de nuevo con los datos nuevos.
@@ -2348,7 +2355,37 @@ function renderClientDetail(clientId){
         ${df('Forma de Pago',{contado:'Contado',financiera_bmw:'Financiera BMW',credito:'Crédito',transferencia:'Transferencia'}[c.formaPago]||c.formaPago)}
         ${df('Entrega',fmtDate(c.vehiculoFechaEntrega)+' – '+c.vehiculoLugar)}
       </div></div>
+      <div class="notas-card">
+        <div class="notas-head">
+          <h4>${_btnIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/>',15)} Notas del Vendedor</h4>
+          <span class="notas-hint">Solo para tu uso — no aparece en ningún documento</span>
+        </div>
+        <textarea class="notas-textarea" id="notas-vendedor" placeholder="Ej. prefiere que le llamen por la tarde, ya tiene apartado el enganche, viene de parte de..." oninput="onNotasInput('${c.id}')">${c.notas||''}</textarea>
+        <div class="notas-status" id="notas-save-status"></div>
+      </div>
     </div>`;
+}
+
+let _notasSaveTimer = null;
+function onNotasInput(clientId){
+  const badge = document.getElementById('notas-save-status');
+  if(badge) badge.textContent = 'Escribiendo…';
+  clearTimeout(_notasSaveTimer);
+  _notasSaveTimer = setTimeout(()=>saveClientNotas(clientId), 900);
+}
+
+async function saveClientNotas(clientId){
+  const el = document.getElementById('notas-vendedor');
+  const badge = document.getElementById('notas-save-status');
+  if(!el) return;
+  const client = cache.clients.find(c=>c.id===clientId);
+  if(!client) return;
+  client.notas = el.value;
+  const row = _clientToRow(client);
+  const { error } = await sb.from('clients').update({ data: row.data }).eq('id', clientId);
+  if(!badge) return;
+  if(error){ badge.textContent = 'No se pudo guardar la nota.'; return; }
+  badge.textContent = 'Guardado ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
 }
 
 function df(label,val){
