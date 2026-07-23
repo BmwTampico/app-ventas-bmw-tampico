@@ -2306,6 +2306,7 @@ function renderDocuments(clientId){
     {id:'a1',         title:'Formato A1 — Identificación Personas Físicas', desc:'Formato BMW de identificación antilavado para persona física'},
     {id:'amda-pf',    title:'Identificación AMDA — Persona Física', desc:'Formato AMDA oficial de identificación del cliente'},
     {id:'entregas',  title:'Vale de Salida — Formato de Entregas', desc:'Vale de salida del vehículo con fecha, hora y datos de factura'},
+    {id:'salida-unidad', title:'Salida de Unidad', desc:'Formato de salida de unidad con datos del cliente y del vehículo'},
     {id:'cv-contado', title:'Compraventa al Contado', desc:'Contrato de compraventa de vehículo nuevo — Pago de contado'},
     {id:'cv-tasa',    title:'Compraventa a Tasa Fija / Financiera BMW', desc:'Contrato de compraventa de vehículo nuevo — Financiamiento'},
     {id:'checklist',  title:'Check List de Ventas', desc:'Lista de verificación de documentos para la entrega del vehículo'},
@@ -2318,6 +2319,7 @@ function renderDocuments(clientId){
     {id:'a2',         title:'Formato A2 — Identificación Personas Morales', desc:'Formato BMW de identificación antilavado para persona moral'},
     {id:'amda-pm',    title:'Identificación AMDA — Persona Moral', desc:'Formato AMDA oficial de identificación del cliente'},
     {id:'entregas',  title:'Vale de Salida — Formato de Entregas', desc:'Vale de salida del vehículo con fecha, hora y datos de factura'},
+    {id:'salida-unidad', title:'Salida de Unidad', desc:'Formato de salida de unidad con datos del cliente y del vehículo'},
     {id:'cv-contado', title:'Compraventa al Contado', desc:'Contrato de compraventa de vehículo nuevo — Pago de contado'},
     {id:'cv-tasa',    title:'Compraventa a Tasa Fija / Financiera BMW', desc:'Contrato de compraventa de vehículo nuevo — Financiamiento'},
     {id:'bsi-plus',   title:'BSI Plus', desc:'Contrato BMW Service Inclusive Plus'},
@@ -2522,7 +2524,7 @@ async function printSelected(clientId){
 }
 
 function docTitle(id){
-  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW'};
+  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW','salida-unidad':'Salida de Unidad'};
   return m[id]||id;
 }
 
@@ -2790,6 +2792,41 @@ function buildDocHtml(docId, c){
         ${ef(20,   362, 345, modelo.toUpperCase())}
         ${ef(440,  362, 600, (c.entregaPlacas||'').toUpperCase())}
         ${ef(30,   445, 1400, c.entregaObservaciones||'')}
+      </div>
+    </div>`;
+  }
+
+  if(docId==='salida-unidad'){
+    // Imagen escaneada del formato físico "Salida de Unidad" (igual para
+    // Persona Física y Moral) — se usa tal cual, solo se sobreponen los
+    // datos ya capturados en el formulario, sin recrear el diseño del PDF.
+    const IW=925, IH=1275;
+    const sf = (x,y,w,val,fs=10) => {
+      if(!val && val!=='0') return '';
+      const l=x/IW*100, t=y/IH*100, wi=w/IW*100;
+      return `<span style="position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${wi.toFixed(2)}%;overflow:hidden;white-space:nowrap;font-family:Arial,sans-serif;font-size:${fs}px;line-height:1;color:#000">${val}</span>`;
+    };
+    const nameSU = c.tipo==='moral' ? (c.razonSocial||'') : name;
+    const modeloSU = `${c.vehiculoAnio||''} ${c.vehiculoSubmarca||''}`.trim();
+    const vendedorSU = (()=>{const u=(DB.get('ap_users')||[]).find(u=>u.id===c.vendedorId);return u?u.name:'';})();
+    return `<div>
+      <style>
+        @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
+        .su-page{position:relative;width:612px;height:792px;overflow:hidden;display:block}
+        .su-page img{position:absolute;top:0;left:0;width:100%;height:100%}
+      </style>
+      <div class="su-page">
+        <img src="data:image/png;base64,${SALIDA_UNIDAD_BG}" alt="">
+        ${sf(420, 246, 475, `${c.vehiculoLugar||'Tampico'}, ${todayShort}`)}
+        ${sf(95,  290, 490, nameSU)}
+        ${sf(95,  335, 325, c.entregaNoFactura||'')}
+        ${sf(460, 335, 435, vendedorSU)}
+        ${sf(460, 475, 175, modeloSU)}
+        ${sf(700, 475, 195, c.vehiculoColor||'')}
+        ${sf(150, 512, 180, c.vehiculoMarca||'BMW')}
+        ${sf(700, 512, 195, (c.vehiculoNIV||'').toUpperCase())}
+        ${sf(150, 548, 180, c.vehiculoMotor||'')}
+        ${sf(40,  845, 855, c.entregaObservaciones||'')}
       </div>
     </div>`;
   }
