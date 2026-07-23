@@ -306,6 +306,12 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .notas-textarea{width:100%;min-height:90px;resize:vertical;background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;line-height:1.5}
 .notas-textarea:focus{outline:none;border-color:#d4a72c}
 .notas-status{font-size:11px;color:var(--gray);margin-top:8px;min-height:14px}
+.notas-fotos-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.notas-fotos-grid:empty{margin-top:0}
+.notas-foto-item{position:relative;width:84px;height:84px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.notas-foto-item img{width:100%;height:100%;object-fit:cover;cursor:pointer;display:block}
+.notas-foto-remove{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.notas-foto-add{margin-top:12px}
 
 /* ===== USER MGMT ===== */
 .user-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px}
@@ -2158,7 +2164,7 @@ async function saveClient(e, existingId){
   const nombreLog = client.tipo==='fisica'?(client.nombres+' '+client.apellidoPaterno+' '+client.apellidoMaterno):client.razonSocial;
   if(existingId){
     const prev = cache.clients.find(c=>c.id===existingId) || {};
-    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre, notas: prev.notas});
+    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre, notas: prev.notas, notasFotos: prev.notasFotos});
     // Los documentos cambian si los datos del cliente cambian: se reinician
     // tanto el estado de "impreso" como el de "oculto" para que vuelvan a
     // aparecer en la lista y puedan generarse de nuevo con los datos nuevos.
@@ -2361,9 +2367,22 @@ function renderClientDetail(clientId){
           <span class="notas-hint">Solo para tu uso — no aparece en ningún documento</span>
         </div>
         <textarea class="notas-textarea" id="notas-vendedor" placeholder="Ej. prefiere que le llamen por la tarde, ya tiene apartado el enganche, viene de parte de..." oninput="onNotasInput('${c.id}')">${c.notas||''}</textarea>
+        <div class="notas-fotos-grid" id="notas-fotos-grid">${_notasFotosHtml(c)}</div>
+        <div class="notas-foto-add">
+          <input type="file" id="notas-foto-input" accept="image/*" multiple style="display:none" onchange="onNotasPhotosSelected('${c.id}', this)">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('notas-foto-input').click()">${_btnIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>')} Agregar foto</button>
+        </div>
         <div class="notas-status" id="notas-save-status"></div>
       </div>
     </div>`;
+}
+
+function _notasFotosHtml(c){
+  return (c.notasFotos||[]).map((f,i)=>`
+    <div class="notas-foto-item">
+      <img src="${f.url}" alt="" onclick="window.open('${f.url}','_blank')">
+      <button type="button" class="notas-foto-remove" onclick="removeNotaFoto('${c.id}',${i})" aria-label="Eliminar foto" title="Eliminar foto">&times;</button>
+    </div>`).join('');
 }
 
 let _notasSaveTimer = null;
@@ -2376,15 +2395,56 @@ function onNotasInput(clientId){
 
 async function saveClientNotas(clientId){
   const el = document.getElementById('notas-vendedor');
-  const badge = document.getElementById('notas-save-status');
   if(!el) return;
   const client = cache.clients.find(c=>c.id===clientId);
   if(!client) return;
   client.notas = el.value;
+  await _persistClientNotas(clientId);
+}
+
+// Sube una o varias fotos al bucket 'client-photos' (mismo patrón que
+// uploadAvatar) y las agrega al arreglo de fotos de la nota del cliente.
+async function onNotasPhotosSelected(clientId, input){
+  const files = Array.from(input.files||[]).filter(f=>f.type.startsWith('image/'));
+  input.value = '';
+  if(!files.length) return;
+  const client = cache.clients.find(c=>c.id===clientId);
+  if(!client) return;
+  const badge = document.getElementById('notas-save-status');
+  if(badge) badge.textContent = `Subiendo ${files.length>1?'fotos':'foto'}...`;
+  const fotos = client.notasFotos || (client.notasFotos = []);
+  for(const file of files){
+    const path = `${clientId}/${uuid()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error } = await sb.storage.from('client-photos').upload(path, file, { contentType: file.type });
+    if(error){ toast('No se pudo subir una foto. '+_friendlyDbError(error,'onNotasPhotosSelected'),'error'); continue; }
+    const { data } = sb.storage.from('client-photos').getPublicUrl(path);
+    fotos.push({ path, url: data.publicUrl });
+  }
+  await _persistClientNotas(clientId);
+  const grid = document.getElementById('notas-fotos-grid');
+  if(grid) grid.innerHTML = _notasFotosHtml(client);
+}
+
+async function removeNotaFoto(clientId, idx){
+  const client = cache.clients.find(c=>c.id===clientId);
+  if(!client || !client.notasFotos || !client.notasFotos[idx]) return;
+  const ok = await confirmAsync({ title:'Eliminar foto', message:'¿Eliminar esta foto de las notas? No se puede deshacer.', confirmLabel:'Eliminar', cancelLabel:'Cancelar', danger:true });
+  if(!ok) return;
+  const [foto] = client.notasFotos.splice(idx,1);
+  if(foto && foto.path) sb.storage.from('client-photos').remove([foto.path]).catch(()=>{});
+  await _persistClientNotas(clientId);
+  const grid = document.getElementById('notas-fotos-grid');
+  if(grid) grid.innerHTML = _notasFotosHtml(client);
+}
+
+async function _persistClientNotas(clientId){
+  const client = cache.clients.find(c=>c.id===clientId);
+  const badge = document.getElementById('notas-save-status');
+  if(!client) return;
   const row = _clientToRow(client);
   const { error } = await sb.from('clients').update({ data: row.data }).eq('id', clientId);
   if(!badge) return;
-  if(error){ badge.textContent = 'No se pudo guardar la nota.'; return; }
+  if(error){ badge.textContent = 'No se pudo guardar.'; return; }
   badge.textContent = 'Guardado ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
 }
 
