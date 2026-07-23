@@ -2815,8 +2815,10 @@ function buildDocHtml(docId, c){
         .su-header b{font-size:14px}
         .su-title{text-align:center;font-size:18px;font-weight:bold;letter-spacing:.5px;margin-bottom:22px}
         .su-field{display:flex;align-items:flex-end;margin-bottom:14px;min-width:0}
+        .su-field.su-field-right{justify-content:flex-end}
         .su-label{white-space:nowrap;padding-bottom:2px}
         .su-fill{flex:1;border-bottom:1px solid #000;padding-bottom:2px;min-height:15px;margin-left:4px;overflow-wrap:break-word}
+        .su-field-right .su-fill{flex:none;min-width:140px}
         .su-row{display:flex;gap:20px}
         .su-row .su-field{flex:1;margin-bottom:14px}
         .su-sub{font-size:10px;color:#444;margin-top:-10px;margin-bottom:14px}
@@ -2842,7 +2844,7 @@ function buildDocHtml(docId, c){
       <div class="su-header"><img src="data:image/png;base64,${BMW_LOGO_B64}" alt=""><b>AutoPremium Tampico, S.A. de C.V.</b></div>
       <div class="su-title">SALIDA DE UNIDAD</div>
 
-      ${suLine('Lugar y Fecha: ', `${c.vehiculoLugar||'Tampico'}, ${todayShort}`, 'right')}
+      <span class="su-field su-field-right"><span class="su-label">Lugar y Fecha: </span><span class="su-fill">${c.vehiculoLugar||'Tampico'}, ${todayShort}</span></span>
 
       <div class="su-row">
         ${suLine('Cliente: ', nameSU)}
