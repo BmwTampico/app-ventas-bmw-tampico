@@ -2294,7 +2294,7 @@ function renderDocuments(clientId){
   const c = clients.find(x=>x.id===clientId);
   if(!c){ navigate('dashboard'); return; }
   const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
-  const docs = c.tipo==='fisica' ? [
+  const docs = (c.tipo==='fisica' ? [
     {id:'pedido',     title:'Pedido', desc:'Pedido de vehículo con datos de facturación, usuario y condiciones'},
     {id:'a1',         title:'Formato A1 — Identificación Personas Físicas', desc:'Formato BMW de identificación antilavado para persona física'},
     {id:'amda-pf',    title:'Identificación AMDA — Persona Física', desc:'Formato AMDA oficial de identificación del cliente'},
@@ -2318,7 +2318,14 @@ function renderDocuments(clientId){
     {id:'checklist',  title:'Check List de Ventas', desc:'Lista de verificación de documentos para la entrega del vehículo'},
     {id:'entrega-unidad', title:'Check List Entrega de Unidad', desc:'Lista de revisión de entrega del vehículo al cliente'},
     {id:'entrega-final', title:'Check List Entrega Final', desc:'Lista de revisión de entrega final del vehículo al cliente'},
-  ];
+  ]).filter(d=>{
+    // Solo se muestra el contrato de compraventa correspondiente a la forma
+    // de pago elegida: Financiera BMW usa el formato a tasa fija, el resto
+    // (contado, crédito, transferencia) usa el de contado.
+    if(d.id==='cv-tasa') return c.formaPago==='financiera_bmw';
+    if(d.id==='cv-contado') return c.formaPago!=='financiera_bmw';
+    return true;
+  });
 
   const hiddenKey = `ap_hidden_${clientId}`;
   const hidden = DB.get(hiddenKey)||[];
