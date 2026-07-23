@@ -845,7 +845,7 @@ function navigate(view, opts={}){
       confirmLabel:'Descartar y salir',
       cancelLabel:'Seguir editando',
       danger:true,
-      onConfirm:()=>{ _clientFormDirty = false; navigate(view, opts); }
+      onConfirm:()=>{ _clientFormDirty = false; _clearFormDraft(_activeFormClientId()); navigate(view, opts); }
     });
     return;
   }
@@ -1125,6 +1125,50 @@ function liveSearch(q){
 // ============================================================
 let activeTipo = 'fisica';
 let _clientFormDirty = false; // true cuando el usuario modifica el formulario sin guardar
+
+// Borrador local del formulario de cliente: guarda una copia de los campos
+// capturados en localStorage mientras el vendedor escribe, para que un
+// cierre de sesión por inactividad, un cierre accidental de pestaña o un
+// refresh no borren lo que ya llenó — se recupera al volver a abrir el
+// mismo formulario (nuevo cliente o edición del mismo cliente).
+function _draftKey(clientId){ return 'ap_draft_client_' + (clientId || 'new'); }
+
+function _saveFormDraft(clientId){
+  const formEl = document.getElementById('client-form');
+  if(!formEl) return;
+  const data = {};
+  formEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{ data[el.id] = el.value; });
+  try{ localStorage.setItem(_draftKey(clientId), JSON.stringify({ tipo: activeTipo, data, savedAt: Date.now() })); }catch(e){}
+}
+
+function _clearFormDraft(clientId){
+  try{ localStorage.removeItem(_draftKey(clientId)); }catch(e){}
+}
+
+function _restoreFormDraft(draft){
+  if(draft.tipo && draft.tipo !== activeTipo){
+    activeTipo = draft.tipo;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.textContent.includes(activeTipo==='fisica'?'Física':'Moral')));
+    renderTipoFields(null);
+  }
+  Object.keys(draft.data||{}).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = draft.data[id];
+  });
+  calcMontoTotal();
+  _updateStepCompletionBadge();
+  _clientFormDirty = true;
+  toast('Se restauró la información que habías capturado.');
+}
+
+// Contexto del formulario de cliente actualmente abierto (o undefined si
+// ninguno), para que el guardado forzado de borrador en beforeunload / cierre
+// de sesión por inactividad sepa bajo qué llave guardar.
+function _activeFormClientId(){
+  if(currentView==='new-client') return null;
+  if(currentView==='edit-client') return currentClientId;
+  return undefined;
+}
 
 function parsePrefillName(){
   const parts = prefillName.trim().split(/\s+/).filter(Boolean);
@@ -1650,9 +1694,29 @@ function renderClientForm(clientId){
         t.classList.remove('invalid');
       }
       _updateStepCompletionBadge();
+      debounceCall('form-draft-save', ()=>_saveFormDraft(clientId), 600);
     });
-    formEl.addEventListener('change', ()=>{ _clientFormDirty = true; _updateStepCompletionBadge(); });
+    formEl.addEventListener('change', ()=>{
+      _clientFormDirty = true;
+      _updateStepCompletionBadge();
+      debounceCall('form-draft-save', ()=>_saveFormDraft(clientId), 600);
+    });
   }
+
+  // Si hay un borrador guardado de una sesión anterior en este mismo
+  // formulario (nuevo cliente, o edición de este mismo cliente), ofrece
+  // restaurarlo en vez de perderlo silenciosamente.
+  try{
+    const draftRaw = localStorage.getItem(_draftKey(clientId));
+    if(draftRaw){
+      const draft = JSON.parse(draftRaw);
+      toast('Encontramos información sin guardar de una sesión anterior en este formulario.', 'success', {
+        actionLabel: 'Restaurar',
+        duration: 20000,
+        onAction: ()=>_restoreFormDraft(draft)
+      });
+    }
+  }catch(e){ _clearFormDraft(clientId); }
 }
 
 
@@ -2100,6 +2164,7 @@ async function saveClient(e, existingId){
     logActivity('Editó un cliente', nombreLog);
     toast('Cliente actualizado correctamente');
     _clientFormDirty = false;
+    _clearFormDraft(existingId);
     navigate('client-detail',{clientId:existingId});
   } else {
     const row = _clientToRow(client);
@@ -2110,6 +2175,7 @@ async function saveClient(e, existingId){
     logActivity('Registró un nuevo cliente', nombreLog);
     toast('Cliente registrado correctamente');
     _clientFormDirty = false;
+    _clearFormDraft(null);
     navigate('documents',{clientId:newClient.id});
   }
   } catch(err){
@@ -4482,6 +4548,10 @@ function resetInactivityTimer(){
   }, INACTIVITY_WARNING_MS);
   _inactivityTimer = setTimeout(async ()=>{
     if(!currentUser) return;
+    if(_clientFormDirty){
+      const fid = _activeFormClientId();
+      if(fid !== undefined) _saveFormDraft(fid);
+    }
     await doLogout();
     showLoginError('Tu sesión se cerró por inactividad. Vuelve a iniciar sesión.');
   }, INACTIVITY_MS);
@@ -4496,6 +4566,8 @@ function resetInactivityTimer(){
 // pestaña perdería todo lo capturado sin ningún aviso.
 window.addEventListener('beforeunload', (e)=>{
   if(!_clientFormDirty) return;
+  const fid = _activeFormClientId();
+  if(fid !== undefined) _saveFormDraft(fid);
   e.preventDefault();
   e.returnValue = ''; // requerido por Chrome para mostrar el diálogo nativo
 });
