@@ -1564,6 +1564,8 @@ function renderClientForm(clientId){
             </div>
             <div class="form-group"><label for="f-fecha-ent">Fecha de Entrega</label><input class="form-control" id="f-fecha-ent" type="date" value="${v(client,'vehiculoFechaEntrega','')}"></div>
             <div class="form-group"><label for="f-lugar-ent">Lugar de Entrega</label><input class="form-control" id="f-lugar-ent" value="${v(client,'vehiculoLugar','Tampico')}"></div>
+            <div class="form-group"><label for="f-enganche">Enganche</label><input class="form-control" id="f-enganche" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'enganche',''))}" oninput="onCurrencyInput(this)"></div>
+            <div class="form-group"><label for="f-monto-financiar">Monto a Financiar</label><input class="form-control" id="f-monto-financiar" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'montoFinanciar',''))}" oninput="onCurrencyInput(this)"></div>
           </div>
         </div><!-- end vehicle-section -->
         <div style="display:flex;justify-content:space-between;margin-top:20px">
@@ -2044,6 +2046,7 @@ async function saveClient(e, existingId){
     vehiculoMotor:g('f-motor'),
     vehiculoCapacidad:g('f-capacidad'), vehiculoPrecio:parseCurrency('f-precio'),
     vehiculoFechaEntrega:g('f-fecha-ent'), vehiculoLugar:g('f-lugar-ent'),
+    enganche:parseCurrency('f-enganche'), montoFinanciar:parseCurrency('f-monto-financiar'),
     entregaFechaSalida:g('f-fecha-salida'), entregaHoraSalida:g('f-hora-salida'),
     entregaFolio:g('f-folio'), entregaNoFactura:g('f-no-factura'),
     entregaNoOrden:g('f-no-orden'), entregaPlacas:g('f-placas'),
@@ -3045,8 +3048,8 @@ function buildDocHtml(docId, c){
     const dd2 = String(day).padStart(2,'0');
     const dayStr2 = `${dd2}/${mm2}/${year}`;
     const precioCV2 = c.vehiculoPrecio ? Number(c.vehiculoPrecio).toLocaleString('es-MX') : '';
-    const engancheCV = '';
-    const saldoCV = '';
+    const engancheCV = c.enganche ? Number(c.enganche).toLocaleString('es-MX') : '';
+    const saldoCV = c.montoFinanciar ? Number(c.montoFinanciar).toLocaleString('es-MX') : '';
     return `<div>
       <style>
         @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}.cv-page{page-break-after:always}}
