@@ -410,7 +410,7 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
         </button>
       </div>
     </div>
-    <button class="btn btn-primary btn-full" onclick="runAsync(this,'Entrando...',doLogin)">Iniciar Sesión</button>
+    <button id="btn-login" class="btn btn-primary btn-full" onclick="runAsync(this,'Entrando...',doLogin)">Iniciar Sesión</button>
     <div style="text-align:center;margin-top:16px">
       <a onclick="forgotPassword()" style="cursor:pointer;color:var(--blue-light);font-size:13px" role="button" tabindex="0" onkeydown="if(event.key==='Enter'){forgotPassword()}">¿Olvidaste tu contraseña?</a>
     </div>
@@ -4197,7 +4197,9 @@ async function changePassword(){
 // ============================================================
 // INIT
 // ============================================================
-document.getElementById('inp-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+// Enter dispara el click del botón (no doLogin directo) para que pase por
+// runAsync y muestre el spinner "Entrando..." igual que al hacer click.
+document.getElementById('inp-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('btn-login').click(); });
 document.getElementById('inp-user').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('inp-pass').focus(); });
 
 // Cierra el panel de resultados de búsqueda en vivo al hacer click fuera de él
