@@ -306,12 +306,23 @@ body.theme-light .doc-icon svg{color:var(--blue)}
 .notas-textarea{width:100%;min-height:90px;resize:vertical;background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;line-height:1.5}
 .notas-textarea:focus{outline:none;border-color:#d4a72c}
 .notas-status{font-size:11px;color:var(--gray);margin-top:8px;min-height:14px}
-.notas-fotos-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-.notas-fotos-grid:empty{margin-top:0}
-.notas-foto-item{position:relative;width:84px;height:84px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.notas-pending-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.notas-pending-grid:empty{margin-top:0}
+.notas-foto-item{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
 .notas-foto-item img{width:100%;height:100%;object-fit:cover;cursor:pointer;display:block}
-.notas-foto-remove{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
-.notas-foto-add{margin-top:12px}
+.notas-foto-remove{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.notas-compose-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.notas-empty{font-size:13px;color:var(--gray);margin:0}
+.postit-grid{display:flex;flex-wrap:wrap;gap:18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.postit-grid:empty{margin-top:0;padding-top:0;border-top:none}
+.postit{position:relative;width:170px;min-height:150px;background:#fdea9b;color:#3a2f00;border-radius:2px;padding:14px 12px 10px;box-shadow:0 6px 14px rgba(0,0,0,.25);transform:rotate(var(--r,-1deg));transition:transform .15s ease-out;font-size:13px;display:flex;flex-direction:column}
+.postit:hover{transform:rotate(0deg) scale(1.03);z-index:2}
+.postit-text{margin:0 0 8px;white-space:pre-wrap;word-break:break-word;line-height:1.4;flex:1}
+.postit-fotos{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.postit-fotos img{width:44px;height:44px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid rgba(0,0,0,.15)}
+.postit-meta{font-size:10px;color:#6b5c00;opacity:.8}
+.postit-del{position:absolute;top:4px;right:6px;background:none;border:none;color:#6b5c00;font-size:15px;line-height:1;cursor:pointer;opacity:.55;padding:2px}
+.postit-del:hover{opacity:1}
 
 /* ===== USER MGMT ===== */
 .user-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px}
@@ -2164,7 +2175,7 @@ async function saveClient(e, existingId){
   const nombreLog = client.tipo==='fisica'?(client.nombres+' '+client.apellidoPaterno+' '+client.apellidoMaterno):client.razonSocial;
   if(existingId){
     const prev = cache.clients.find(c=>c.id===existingId) || {};
-    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre, notas: prev.notas, notasFotos: prev.notasFotos});
+    const row = _clientToRow({...client, vendedorId: prev.vendedorId, vendedorNombre: prev.vendedorNombre, notas: prev.notas, notasFotos: prev.notasFotos, notasList: prev.notasList});
     // Los documentos cambian si los datos del cliente cambian: se reinician
     // tanto el estado de "impreso" como el de "oculto" para que vuelvan a
     // aparecer en la lista y puedan generarse de nuevo con los datos nuevos.
@@ -2366,79 +2377,112 @@ function renderClientDetail(clientId){
           <h4>${_btnIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/>',15)} Notas del Vendedor</h4>
           <span class="notas-hint">Solo para tu uso — no aparece en ningún documento</span>
         </div>
-        <textarea class="notas-textarea" id="notas-vendedor" placeholder="Ej. prefiere que le llamen por la tarde, ya tiene apartado el enganche, viene de parte de..." oninput="onNotasInput('${c.id}')">${c.notas||''}</textarea>
-        <div class="notas-fotos-grid" id="notas-fotos-grid">${_notasFotosHtml(c)}</div>
-        <div class="notas-foto-add">
-          <input type="file" id="notas-foto-input" accept="image/*" multiple style="display:none" onchange="onNotasPhotosSelected('${c.id}', this)">
+        <textarea class="notas-textarea" id="notas-vendedor" placeholder="Escribe una nota sobre este cliente..."></textarea>
+        <div class="notas-pending-grid" id="notas-pending-grid"></div>
+        <div class="notas-compose-actions">
+          <input type="file" id="notas-foto-input" accept="image/*" multiple style="display:none" onchange="onNotasFilesStaged(this)">
           <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('notas-foto-input').click()">${_btnIcon('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>')} Agregar foto</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="saveNotaEntry('${c.id}')">Guardar nota</button>
         </div>
         <div class="notas-status" id="notas-save-status"></div>
+        <div class="postit-grid" id="notas-list">${_notasListHtml(c)}</div>
       </div>
     </div>`;
 }
 
-function _notasFotosHtml(c){
-  return (c.notasFotos||[]).map((f,i)=>`
-    <div class="notas-foto-item">
-      <img src="${f.url}" alt="" onclick="window.open('${f.url}','_blank')">
-      <button type="button" class="notas-foto-remove" onclick="removeNotaFoto('${c.id}',${i})" aria-label="Eliminar foto" title="Eliminar foto">&times;</button>
+function _escHtml(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Migra clientes con el formato antiguo (una sola nota + fotos sueltas) a
+// una entrada de la lista, la primera vez que se muestran.
+function _getNotasList(c){
+  if(Array.isArray(c.notasList)) return c.notasList;
+  if(c.notas || (c.notasFotos&&c.notasFotos.length)){
+    return [{ id: uuid(), texto: c.notas||'', fotos: c.notasFotos||[], createdAt: c.fechaRegistro||new Date().toISOString(), autor: c.vendedorNombre||'' }];
+  }
+  return [];
+}
+
+function _notasListHtml(c){
+  const list = _getNotasList(c);
+  if(!list.length) return `<p class="notas-empty">Aún no hay notas guardadas.</p>`;
+  return list.map((n,i)=>`
+    <div class="postit" style="--r:${(i%2===0?-1:1)*(1+(i%3))}deg">
+      <button type="button" class="postit-del" onclick="removeNotaEntry('${c.id}','${n.id}')" aria-label="Eliminar nota" title="Eliminar nota">&times;</button>
+      ${n.texto?`<p class="postit-text">${_escHtml(n.texto)}</p>`:''}
+      ${(n.fotos&&n.fotos.length)?`<div class="postit-fotos">${n.fotos.map(f=>`<img src="${f.url}" alt="" onclick="window.open('${f.url}','_blank')">`).join('')}</div>`:''}
+      <div class="postit-meta">${_timeAgo(n.createdAt)}${n.autor?' · '+_escHtml(n.autor):''}</div>
     </div>`).join('');
 }
 
-let _notasSaveTimer = null;
-function onNotasInput(clientId){
-  const badge = document.getElementById('notas-save-status');
-  if(badge) badge.textContent = 'Escribiendo…';
-  clearTimeout(_notasSaveTimer);
-  _notasSaveTimer = setTimeout(()=>saveClientNotas(clientId), 900);
+// Fotos elegidas pero aún no subidas, mientras se redacta la nota actual.
+let _notasPendingFiles = [];
+function onNotasFilesStaged(input){
+  const files = Array.from(input.files||[]).filter(f=>f.type.startsWith('image/'));
+  _notasPendingFiles = _notasPendingFiles.concat(files);
+  input.value = '';
+  _renderNotasPending();
 }
+function _renderNotasPending(){
+  const wrap = document.getElementById('notas-pending-grid');
+  if(!wrap) return;
+  wrap.innerHTML = _notasPendingFiles.map((f,i)=>`
+    <div class="notas-foto-item">
+      <img src="${URL.createObjectURL(f)}" alt="">
+      <button type="button" class="notas-foto-remove" onclick="removePendingFoto(${i})" aria-label="Quitar foto" title="Quitar foto">&times;</button>
+    </div>`).join('');
+}
+function removePendingFoto(i){ _notasPendingFiles.splice(i,1); _renderNotasPending(); }
 
-async function saveClientNotas(clientId){
+// Sube las fotos pendientes al bucket 'client-photos' (mismo patrón que
+// uploadAvatar) y guarda el texto + fotos como una nueva nota al principio
+// de la lista.
+async function saveNotaEntry(clientId){
   const el = document.getElementById('notas-vendedor');
-  if(!el) return;
+  const texto = el ? el.value.trim() : '';
+  if(!texto && !_notasPendingFiles.length){ toast('Escribe una nota o agrega una foto antes de guardar.','error'); return; }
   const client = cache.clients.find(c=>c.id===clientId);
   if(!client) return;
-  client.notas = el.value;
-  await _persistClientNotas(clientId);
-}
-
-// Sube una o varias fotos al bucket 'client-photos' (mismo patrón que
-// uploadAvatar) y las agrega al arreglo de fotos de la nota del cliente.
-async function onNotasPhotosSelected(clientId, input){
-  const files = Array.from(input.files||[]).filter(f=>f.type.startsWith('image/'));
-  if(!files.length){ input.value=''; return; }
-  const client = cache.clients.find(c=>c.id===clientId);
-  if(!client){ input.value=''; return; }
   const badge = document.getElementById('notas-save-status');
-  if(badge) badge.textContent = `Subiendo ${files.length>1?'fotos':'foto'}...`;
-  const fotos = client.notasFotos || (client.notasFotos = []);
-  for(const file of files){
+  if(badge) badge.textContent = 'Guardando...';
+  const fotos = [];
+  for(const file of _notasPendingFiles){
     const path = `${clientId}/${uuid()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    // No se limpia input.value antes de terminar de leer el archivo: en
-    // Safari, vaciar el <input type="file"> mientras la subida todavía está
-    // leyendo el Blob puede invalidarlo y la subida llega vacía al servidor
-    // ("No content provided").
+    // No se limpia el <input type="file"> antes de terminar de leer el
+    // archivo: en Safari, vaciarlo mientras la subida todavía está leyendo
+    // el Blob puede invalidarlo y la subida llega vacía ("No content provided").
     const { error } = await sb.storage.from('client-photos').upload(path, file, { contentType: file.type || 'image/jpeg' });
-    if(error){ toast('No se pudo subir una foto. '+_friendlyDbError(error,'onNotasPhotosSelected'),'error'); continue; }
+    if(error){ toast('No se pudo subir una foto. '+_friendlyDbError(error,'saveNotaEntry'),'error'); continue; }
     const { data } = sb.storage.from('client-photos').getPublicUrl(path);
     fotos.push({ path, url: data.publicUrl });
   }
-  input.value = '';
+  const list = _getNotasList(client);
+  list.unshift({ id: uuid(), texto, fotos, createdAt: new Date().toISOString(), autor: currentUser.name });
+  client.notasList = list;
   await _persistClientNotas(clientId);
-  const grid = document.getElementById('notas-fotos-grid');
-  if(grid) grid.innerHTML = _notasFotosHtml(client);
+  if(el) el.value = '';
+  _notasPendingFiles = [];
+  _renderNotasPending();
+  const listWrap = document.getElementById('notas-list');
+  if(listWrap) listWrap.innerHTML = _notasListHtml(client);
+  if(badge) badge.textContent = '';
 }
 
-async function removeNotaFoto(clientId, idx){
+async function removeNotaEntry(clientId, entryId){
   const client = cache.clients.find(c=>c.id===clientId);
-  if(!client || !client.notasFotos || !client.notasFotos[idx]) return;
-  const ok = await confirmAsync({ title:'Eliminar foto', message:'¿Eliminar esta foto de las notas? No se puede deshacer.', confirmLabel:'Eliminar', cancelLabel:'Cancelar', danger:true });
+  if(!client) return;
+  const list = _getNotasList(client);
+  const idx = list.findIndex(n=>n.id===entryId);
+  if(idx<0) return;
+  const ok = await confirmAsync({ title:'Eliminar nota', message:'¿Eliminar esta nota y sus fotos? No se puede deshacer.', confirmLabel:'Eliminar', cancelLabel:'Cancelar', danger:true });
   if(!ok) return;
-  const [foto] = client.notasFotos.splice(idx,1);
-  if(foto && foto.path) sb.storage.from('client-photos').remove([foto.path]).catch(()=>{});
+  const [entry] = list.splice(idx,1);
+  (entry.fotos||[]).forEach(f=>{ if(f.path) sb.storage.from('client-photos').remove([f.path]).catch(()=>{}); });
+  client.notasList = list;
   await _persistClientNotas(clientId);
-  const grid = document.getElementById('notas-fotos-grid');
-  if(grid) grid.innerHTML = _notasFotosHtml(client);
+  const listWrap = document.getElementById('notas-list');
+  if(listWrap) listWrap.innerHTML = _notasListHtml(client);
 }
 
 async function _persistClientNotas(clientId){
