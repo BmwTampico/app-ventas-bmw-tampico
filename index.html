@@ -3035,10 +3035,10 @@ function buildDocHtml(docId, c){
 
   if(docId==='cv-tasa'){
     const W2=613, H2=1009, WL=612, HL=792;
-    const fld2 = (x,y,w,val,fs=9) => {
+    const fld2 = (x,y,w,val,fs=9,align='left') => {
       if(!val && val!=='0') return '';
       const l=x/W2*100, t=y/H2*100, wi=w/W2*100;
-      return `<span style="position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${wi.toFixed(2)}%;overflow:hidden;white-space:nowrap;font-family:Arial,sans-serif;font-size:${fs}px;line-height:1;color:#000">${val}</span>`;
+      return `<span style="position:absolute;left:${l.toFixed(2)}%;top:${t.toFixed(2)}%;width:${wi.toFixed(2)}%;overflow:hidden;white-space:nowrap;font-family:Arial,sans-serif;font-size:${fs}px;line-height:1;color:#000;text-align:${align}">${val}</span>`;
     };
     const nameCV2 = c.tipo==='fisica'
       ? `${(c.apellidoPaterno||'').toUpperCase()} ${(c.apellidoMaterno||'').toUpperCase()} ${(c.nombres||'').toUpperCase()}`.trim()
@@ -3076,9 +3076,9 @@ function buildDocHtml(docId, c){
         ${fld2(129,455,170,(c.vehiculoSubmarca||'').toUpperCase())}
         ${fld2(326,423,78,(c.vehiculoColor||'').toUpperCase())}
         ${fld2(129,466,170,(c.vehiculoVersion||'').toUpperCase())}
-        ${fld2(154,624,109,precioCV2)}
-        ${fld2(298,691,100,engancheCV)}
-        ${fld2(312,740,100,saldoCV)}
+        ${fld2(154,624,109,precioCV2,9,'center')}
+        ${fld2(298,691,100,engancheCV,9,'center')}
+        ${fld2(312,740,100,saldoCV,9,'center')}
       </div>
       <div class="cv-page">
         <img src="data:image/png;base64,${CV_TASA_P5}" alt="">
