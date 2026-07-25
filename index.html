@@ -3059,7 +3059,8 @@ function buildDocHtml(docId, c){
     // líneas y los datos capturados queden alineados con nitidez al
     // imprimir, igual para Persona Física y Moral.
     const nameSU = c.tipo==='moral' ? (c.razonSocial||'') : name;
-    const modeloSU = `${c.vehiculoAnio||''} ${c.vehiculoSubmarca||''}`.trim();
+    const modeloSU = c.vehiculoAnio||'';
+    const tipoSU = c.vehiculoSubmarca||'';
     const vendedorSU = (()=>{const u=(DB.get('ap_users')||[]).find(u=>u.id===c.vendedorId);return u?u.name:'';})();
     const suLine = (label, val, align='left') => `<span class="su-field"><span class="su-label">${label}</span><span class="su-fill" style="text-align:${align}">${val||''}</span></span>`;
     const equipo = ['Botiquín de Primeros Auxilios','Herramienta Completa','Triángulo de Señalización','Llanta y Gato de refacción','Luces'];
@@ -3124,7 +3125,7 @@ function buildDocHtml(docId, c){
       </div>
       <div class="su-unit-row">
         ${suLine('Marca: ', c.vehiculoMarca||'BMW')}
-        ${suLine('Tipo: ', '')}
+        ${suLine('Tipo: ', tipoSU)}
         ${suLine('Serie: ', (c.vehiculoNIV||'').toUpperCase())}
       </div>
       <div class="su-unit-row" style="width:33%">
