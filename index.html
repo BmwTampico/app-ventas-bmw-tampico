@@ -3047,7 +3047,8 @@ function buildDocHtml(docId, c){
         ${ef(884,  244, 250, c.entregaNoFactura||'')}
         ${ef(92,   303, 680, (c.tipo==='moral' ? `${c.repNombres||''} ${c.repApellidoPaterno||''} ${c.repApellidoMaterno||''}`.trim() : name).toUpperCase())}
         ${ef(792,  303, 650, (c.vehiculoNIV||'').toUpperCase())}
-        ${ef(20,   362, 345, modelo.toUpperCase())}
+        ${ef(20,   362, 90,  'Modelo:')}
+        ${ef(112,  362, 253, modelo.toUpperCase())}
         ${ef(440,  362, 600, (c.entregaPlacas||'').toUpperCase())}
         ${ef(30,   445, 1400, c.entregaObservaciones||'')}
       </div>
