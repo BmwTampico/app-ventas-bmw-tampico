@@ -3174,8 +3174,8 @@ function buildDocHtml(docId, c){
     const nameA4 = c.tipo==='moral' ? (c.razonSocial||'') : name;
     return `<div class="a4-wrap">
       <style>
-        @media print{@page{size:letter portrait;margin:20mm}body,html{margin:0;padding:0}}
-        .a4-wrap{width:100%;max-width:560px;margin:0 auto;font-family:Arial,sans-serif;color:#111;font-size:12px;line-height:1.5}
+        @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
+        .a4-wrap{width:100%;max-width:560px;margin:0 auto;padding:20mm 0;box-sizing:border-box;font-family:Arial,sans-serif;color:#111;font-size:12px;line-height:1.5}
         .a4-field{display:flex;align-items:flex-end;margin-bottom:16px}
         .a4-label{white-space:nowrap;padding-bottom:2px}
         .a4-fill{flex:1;border-bottom:1px solid #000;padding-bottom:2px;min-height:15px;margin-left:4px;overflow-wrap:break-word}
