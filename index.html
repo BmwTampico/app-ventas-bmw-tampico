@@ -1694,7 +1694,7 @@ function renderClientForm(clientId){
             <div class="form-group"><label for="f-hora-salida">Hora de Salida</label><input class="form-control" id="f-hora-salida" type="time" value="${v(client,'entregaHoraSalida','')}"></div>
             <div class="form-group"><label for="f-folio">No. de Folio</label><input class="form-control" id="f-folio" value="${v(client,'entregaFolio','')}"></div>
             <div class="form-group"><label for="f-no-factura">No. de Factura</label><input class="form-control" id="f-no-factura" value="${v(client,'entregaNoFactura','')}"></div>
-            <div class="form-group"><label for="f-no-orden">No. de Orden</label><input class="form-control" id="f-no-orden" value="${v(client,'entregaNoOrden','')}"></div>
+            <div class="form-group"><label for="f-no-orden">No. de Inventario</label><input class="form-control" id="f-no-orden" value="${v(client,'entregaNoOrden','')}"></div>
             <div class="form-group"><label for="f-placas">Placas</label><input class="form-control" id="f-placas" value="${v(client,'entregaPlacas','')}"></div>
             <div class="form-group" style="grid-column:span 3"><label for="f-obs-entrega">Observaciones Entrega</label><textarea class="form-control" id="f-obs-entrega" rows="2">${v(client,'entregaObservaciones','')}</textarea></div>
           </div>
@@ -3546,7 +3546,7 @@ function buildDocHtml(docId, c){
       <div class="chk-wrapper"><div class="chk-page">
         <img src="data:image/png;base64,${CHECKLIST_BG}" alt="">
         ${cf(615,69,478,nameChk)}
-        ${cf(692,94,108,'')}
+        ${cf(692,94,108,c.entregaNoOrden||'')}
         ${cf(590,119,504,vendedorChk)}
         ${cf(458,1239,84,todayShort,10)}
       </div></div>
