@@ -4778,6 +4778,44 @@ function togglePass(){
     : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 }
 
+// Aviso de Bloq Mayús activado en cualquier campo de contraseña (incluidos
+// los de modales creados dinámicamente): al estar el valor oculto con
+// puntos, el usuario no puede notar por sí mismo que las mayúsculas están
+// activadas, lo que suele causar errores de inicio de sesión difíciles de
+// diagnosticar. Un solo aviso flotante se reutiliza y se posiciona junto al
+// campo de contraseña activo.
+function _capsLockWarnEl(){
+  let el = document.getElementById('capslock-warning');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'capslock-warning';
+    el.textContent = '⚠ Bloq Mayús está activado';
+    el.style.cssText = 'position:absolute;z-index:9999;background:#3a2a00;color:#ffcf5c;border:1px solid #7a5c00;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function _capsLockCheck(e){
+  const t = e.target;
+  if(!t || t.tagName!=='INPUT' || t.type!=='password') return;
+  const warn = _capsLockWarnEl();
+  const on = e.getModifierState && e.getModifierState('CapsLock');
+  if(on){
+    const r = t.getBoundingClientRect();
+    warn.style.left = (r.left + window.scrollX) + 'px';
+    warn.style.top = (r.bottom + window.scrollY + 4) + 'px';
+    warn.style.minWidth = r.width + 'px';
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+document.addEventListener('keydown', _capsLockCheck);
+document.addEventListener('keyup', _capsLockCheck);
+document.addEventListener('focusout', e=>{
+  if(e.target && e.target.tagName==='INPUT' && e.target.type==='password') _capsLockWarnEl().style.display='none';
+}, true);
+
 initDB();
 loadTheme();
 // Re-apply theme when system preference changes (for auto mode)
