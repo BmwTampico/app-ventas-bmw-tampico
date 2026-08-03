@@ -2265,7 +2265,7 @@ function validateRFCFisica(input){
   const suffix = input.id; // f-rfc or f-rep-rfc
   const okId  = suffix==='f-rfc' ? 'ok-rfc'  : 'ok-rep-rfc';
   const errId = suffix==='f-rfc' ? 'e-rfc'   : 'e-rep-rfc';
-  if(val.length < 12){ setCurpRfcState(input,okId,errId,false,'RFC incompleto (mínimo 12 caracteres)'); return false; }
+  if(val.length < 13){ setCurpRfcState(input,okId,errId,false,'RFC incompleto (debe tener 13 caracteres)'); return false; }
   if(!RFC_PF_REGEX.test(val)){ setCurpRfcState(input,okId,errId,false,'RFC inválido. Estructura: 4 letras + fecha (AAMMDD) + 3 homoclave'); return false; }
   if(!validRFCDate(val.slice(4,10))){ setCurpRfcState(input,okId,errId,false,'La fecha en el RFC no es válida'); return false; }
   setCurpRfcState(input,okId,errId,true,''); return true;
@@ -2274,7 +2274,7 @@ function validateRFCFisica(input){
 function validateRFCMoral(input){
   const val = input.value.trim();
   if(val.length === 0){ input.classList.remove('valid','invalid'); clearValidation(input); return true; }
-  if(val.length < 11){ setCurpRfcState(input,'ok-rfc-moral','e-rfc-moral',false,'RFC de persona moral incompleto (mínimo 11 caracteres)'); return false; }
+  if(val.length < 12){ setCurpRfcState(input,'ok-rfc-moral','e-rfc-moral',false,'RFC de persona moral incompleto (debe tener 12 caracteres)'); return false; }
   if(!RFC_PM_REGEX.test(val)){ setCurpRfcState(input,'ok-rfc-moral','e-rfc-moral',false,'RFC inválido. Estructura: 3 letras + fecha (AAMMDD) + 3 homoclave'); return false; }
   if(!validRFCDate(val.slice(3,9))){ setCurpRfcState(input,'ok-rfc-moral','e-rfc-moral',false,'La fecha en el RFC no es válida'); return false; }
   setCurpRfcState(input,'ok-rfc-moral','e-rfc-moral',true,''); return true;
