@@ -2869,8 +2869,8 @@ function buildDocHtml(docId, c){
     const $ = n => n ? '$'+Number(n).toLocaleString('es-MX') : '$___________';
     return `<div class="ped-wrap">
       <style>
-        @media print{@page{size:letter portrait;margin:10mm}body,html{margin:0;padding:0}}
-        .ped-wrap{width:196mm;font-size:9.5px;font-family:Arial,sans-serif;line-height:1.35;box-sizing:border-box}
+        @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
+        .ped-wrap{width:215.9mm;padding:10mm;font-size:9.5px;font-family:Arial,sans-serif;line-height:1.35;box-sizing:border-box}
         .ped-wrap *{box-sizing:border-box}
         .pt{width:100%;border-collapse:collapse;margin-bottom:0}
         .pt th,.pt td{border:1px solid #555;padding:3px 5px;font-size:9.5px;vertical-align:middle}
@@ -3068,8 +3068,8 @@ function buildDocHtml(docId, c){
     const equipo2 = ['Manual de Servicio','Extintor','Compact Disc','Radio','Encendedor'];
     return `<div class="su-wrap">
       <style>
-        @media print{@page{size:letter portrait;margin:14mm 12mm}body,html{margin:0;padding:0}}
-        .su-wrap{width:100%;max-width:520px;margin:0 auto;font-family:Georgia,'Times New Roman',Times,serif;color:#111;font-size:12px}
+        @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
+        .su-wrap{width:100%;max-width:520px;margin:0 auto;padding:14mm 12mm;box-sizing:border-box;font-family:Georgia,'Times New Roman',Times,serif;color:#111;font-size:12px}
         .su-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
         .su-header img{width:46px;height:auto}
         .su-header b{font-size:14px}
