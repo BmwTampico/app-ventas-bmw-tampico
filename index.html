@@ -2552,7 +2552,16 @@ function df(label,val){
 }
 function fmtDate(d){
   if(!d) return '—';
-  try{ return new Date(d).toLocaleDateString('es-MX'); }catch(e){ return d; }
+  try{
+    // Los campos <input type="date"> entregan "AAAA-MM-DD" sin zona horaria.
+    // `new Date("AAAA-MM-DD")` lo interpreta como medianoche UTC, y en
+    // zonas horarias detrás de UTC (México) eso se muestra como el día
+    // anterior al capturado. Se arma la fecha con sus partes en hora local
+    // para evitar ese corrimiento de un día.
+    const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const dt = m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(d);
+    return dt.toLocaleDateString('es-MX');
+  }catch(e){ return d; }
 }
 
 // ============================================================
@@ -2861,6 +2870,11 @@ function printModal(){
 function buildDocHtml(docId, c){
   const today = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const todayShort = new Date().toLocaleDateString('es-MX');
+  // Fecha para los formatos de entrega (Vale de Salida, checklists de
+  // entrega): usa la Fecha de Salida capturada en el formulario si ya se
+  // definió, ya que el formato suele imprimirse días antes de la entrega
+  // real; si aún no se ha capturado, usa la fecha de hoy como respaldo.
+  const fechaEntregaShort = c.entregaFechaSalida ? fmtDate(c.entregaFechaSalida) : todayShort;
   const day = new Date().getDate();
   const month = new Date().toLocaleDateString('es-MX',{month:'long'});
   const year = new Date().getFullYear();
@@ -3047,7 +3061,7 @@ function buildDocHtml(docId, c){
       </style>
       <div class="ent-wrapper"><div class="ent-page">
         <img src="data:image/png;base64,${ENTREGAS_BG}" alt="">
-        ${ef(1370, 78,  108, todayShort)}
+        ${ef(1370, 78,  108, fechaEntregaShort)}
         ${ef(168,  183, 195, fmtDate(c.entregaFechaSalida))}
         ${ef(505,  183, 185, fmtHora(c.entregaHoraSalida))}
         ${ef(816,  183, 250, c.entregaFolio||'')}
@@ -3627,7 +3641,7 @@ function buildDocHtml(docId, c){
           <div>Chasis: <b>${(c.vehiculoNIV||'').toUpperCase()}</b></div>
         </div>
         <div class="mot-top-right">
-          <div class="mot-fecha-box">Fecha:<b>${todayShort}</b></div>
+          <div class="mot-fecha-box">Fecha:<b>${fechaEntregaShort}</b></div>
           <div class="mot-logo"><img src="data:image/png;base64,${BMW_LOGO_B64}" alt=""><span>BMW<br>MOTORRAD</span></div>
         </div>
       </div>
@@ -3757,7 +3771,7 @@ function buildDocHtml(docId, c){
       </style>
       <div class="ef-wrapper"><div class="ef-page">
         <img src="data:image/png;base64,${ENTREGA_FINAL_BG}" alt="">
-        ${eff(840,75,140,todayShort,9)}
+        ${eff(840,75,140,fechaEntregaShort,9)}
         ${eff(165,100,400,'AUTOPREMIUM TAMPICO')}
         ${eff(120,140,350,modeloEF)}
         ${eff(550,128,200,String(c.vehiculoAnio||''))}
@@ -3785,7 +3799,7 @@ function buildDocHtml(docId, c){
       </style>
       <div class="eu-wrapper"><div class="eu-page">
         <img src="data:image/png;base64,${ENTREGA_UNIDAD_BG}" alt="">
-        ${ef2(600,112,140,todayShort,9)}
+        ${ef2(600,112,140,fechaEntregaShort,9)}
         ${ef2(580,158,100,String(c.vehiculoAnio||''),9)}
         ${ef2(120,132,340,'AUTOPREMIUM TAMPICO')}
         ${ef2(120,158,320,modeloEU)}
