@@ -1617,6 +1617,12 @@ function renderClientForm(clientId){
           </h3>
           <h4 class="form-subsection-title">Identificación del vehículo</h4>
           <div class="form-grid form-grid-3" style="margin-bottom:24px">
+            <div class="form-group"><label for="f-vehiculo-tipo">Tipo de Vehículo</label>
+              <select class="form-control" id="f-vehiculo-tipo">
+                <option value="auto" ${v(client,'vehiculoTipo','auto')==='auto'?'selected':''}>Automóvil</option>
+                <option value="moto" ${v(client,'vehiculoTipo','auto')==='moto'?'selected':''}>Motocicleta</option>
+              </select>
+            </div>
             <div class="form-group"><label for="f-marca">Marca</label><input class="form-control" id="f-marca" value="${v(client,'vehiculoMarca','BMW')}"></div>
             <div class="form-group"><label for="f-submarca">Modelo</label><input class="form-control" id="f-submarca" placeholder="X3 xDrive30, Serie 3 320i..." value="${v(client,'vehiculoSubmarca','')}"></div>
             <div class="form-group"><label for="f-color">Color</label><input class="form-control" id="f-color" value="${v(client,'vehiculoColor','')}"></div>
@@ -2141,7 +2147,7 @@ async function saveClient(e, existingId){
     colonia:g('f-colonia'), municipio:g('f-municipio'), ciudad:g('f-ciudad'),
     estado:g('f-estado'), cp:g('f-cp'), pais:g('f-pais'),
     telefono:g('f-tel'), telefonoCasa:g('f-tel-casa'), extension:g('f-ext'), correo:g('f-correo'),
-    vehiculoMarca:g('f-marca'), vehiculoSubmarca:g('f-submarca'), vehiculoTipo:'',
+    vehiculoMarca:g('f-marca'), vehiculoSubmarca:g('f-submarca'), vehiculoTipo:g('f-vehiculo-tipo'),
     vehiculoColor:g('f-color'), vehiculoAnio:g('f-anio'), vehiculoNIV:g('f-niv'),
     vehiculoMotor:g('f-motor'),
     vehiculoCapacidad:g('f-capacidad'), vehiculoPrecio:parseCurrency('f-precio'),
@@ -2569,6 +2575,7 @@ function renderDocuments(clientId){
     {id:'checklist',  title:'Check List de Ventas', desc:'Lista de verificación de documentos para la entrega del vehículo'},
     {id:'entrega-unidad', title:'Check List Entrega de Unidad', desc:'Lista de revisión de entrega del vehículo al cliente'},
     {id:'entrega-final', title:'Check List Entrega Final', desc:'Lista de revisión de entrega final del vehículo al cliente'},
+    {id:'checklist-motorrad', title:'Check List Entrega Motorrad', desc:'Lista de verificación de entrega para motocicletas BMW Motorrad'},
     {id:'bsi-plus', title:'BSI Plus', desc:'Contrato BMW Service Inclusive Plus'},
     {id:'aviso-privacidad', title:'Aviso de Privacidad', desc:'Aviso de privacidad y tratamiento de datos personales'},
   ] : [
@@ -2585,12 +2592,14 @@ function renderDocuments(clientId){
     {id:'checklist',  title:'Check List de Ventas', desc:'Lista de verificación de documentos para la entrega del vehículo'},
     {id:'entrega-unidad', title:'Check List Entrega de Unidad', desc:'Lista de revisión de entrega del vehículo al cliente'},
     {id:'entrega-final', title:'Check List Entrega Final', desc:'Lista de revisión de entrega final del vehículo al cliente'},
+    {id:'checklist-motorrad', title:'Check List Entrega Motorrad', desc:'Lista de verificación de entrega para motocicletas BMW Motorrad'},
   ]).filter(d=>{
     // Solo se muestra el contrato de compraventa correspondiente a la forma
     // de pago elegida: Financiera BMW usa el formato a tasa fija, el resto
     // (contado, crédito, transferencia) usa el de contado.
     if(d.id==='cv-tasa') return c.formaPago==='financiera_bmw';
     if(d.id==='cv-contado') return c.formaPago!=='financiera_bmw';
+    if(d.id==='checklist-motorrad') return c.vehiculoTipo==='moto';
     return true;
   });
 
@@ -2782,7 +2791,7 @@ async function printSelected(clientId){
 }
 
 function docTitle(id){
-  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW','salida-unidad':'Salida de Unidad','anexo4':'Anexo 4 — Certificado de Uso Final'};
+  const m={pedido:'Pedido',a1:'Formato A1',a2:'Formato A2','amda-pf':'Identificación AMDA PF','amda-pm':'Identificación AMDA PM','cv-contado':'Compraventa al Contado','cv-tasa':'Compraventa a Tasa Fija / Financiera BMW','salida-unidad':'Salida de Unidad','anexo4':'Anexo 4 — Certificado de Uso Final','checklist-motorrad':'Check List Entrega Motorrad'};
   return m[id]||id;
 }
 
@@ -3550,6 +3559,116 @@ function buildDocHtml(docId, c){
         ${cf(590,119,504,vendedorChk)}
         ${cf(458,1239,84,todayShort,10)}
       </div></div>
+    </div>`;
+  }
+
+  if(docId==='checklist-motorrad'){
+    // Recreado en HTML/CSS a partir de "03 Check List Entrega final
+    // Motorrad.xlsx" (formato QMA Herramienta 132). Solo se ofrece cuando
+    // el vehículo registrado es una motocicleta (ver filtro en docs[]).
+    const nameMot = c.tipo==='moral' ? (c.razonSocial||'') : name;
+    const seccion = (titulo, items, filas) => {
+      const li = items.map(t=>`<li>${t}</li>`).join('');
+      const rows = Array.from({length:filas}).map(()=>`<tr><td class="mot-check"></td><td></td></tr>`).join('');
+      return `<div class="mot-section-title">${titulo}</div>
+        <div class="mot-row">
+          <div class="mot-left">
+            <div class="mot-left-header">Revisión de:</div>
+            <ol class="mot-items">${li}</ol>
+          </div>
+          <div class="mot-right">
+            <table class="mot-table">
+              <tr><th class="mot-check">Check</th><th>Comentarios</th></tr>
+              ${rows}
+            </table>
+          </div>
+        </div>`;
+    };
+    return `<div class="mot-wrap">
+      <style>
+        @media print{@page{size:letter portrait;margin:0}body,html{margin:0;padding:0}}
+        .mot-wrap{width:100%;max-width:560px;margin:0 auto;padding:14mm 12mm;box-sizing:border-box;font-family:Arial,sans-serif;color:#111;font-size:11px}
+        .mot-title{text-align:center;font-size:16px;font-weight:bold;margin-bottom:14px}
+        .mot-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px}
+        .mot-top-info div{margin-bottom:4px}
+        .mot-top-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+        .mot-fecha-box{background:#ddd;border:1px solid #999;padding:4px 10px;text-align:center;font-size:10px}
+        .mot-fecha-box b{display:block;font-size:11px}
+        .mot-logo{display:flex;align-items:center;gap:6px}
+        .mot-logo img{width:28px;height:auto}
+        .mot-logo span{font-weight:bold;font-size:12px;line-height:1.1}
+        .mot-section-title{text-align:center;font-weight:bold;font-size:11px;margin:14px 0 6px;text-transform:uppercase}
+        .mot-row{display:flex;gap:10px;align-items:flex-start}
+        .mot-left{flex:1;min-width:0}
+        .mot-left-header{border:1px solid #000;text-align:center;font-weight:bold;padding:3px;font-size:10px;margin-bottom:2px}
+        .mot-items{margin:0;padding-left:16px}
+        .mot-items li{font-size:9.5px;line-height:1.6}
+        .mot-right{flex:1;min-width:0}
+        .mot-table{width:100%;border-collapse:collapse}
+        .mot-table th,.mot-table td{border:1px solid #000;font-size:9.5px;padding:2px 4px;height:14px}
+        .mot-table th{font-weight:bold;text-align:center}
+        .mot-table .mot-check{width:16%;text-align:center}
+        .mot-rating-q{font-weight:bold;font-size:10px;margin:16px 0 6px}
+        .mot-rating{display:flex;border:1px solid #000;border-collapse:collapse;max-width:340px}
+        .mot-rating div{flex:1;text-align:center;border-right:1px solid #000;padding:3px 0;font-size:10px}
+        .mot-rating div:last-child{border-right:none}
+        .mot-signatures{display:flex;justify-content:space-between;margin-top:50px;gap:16px}
+        .mot-sig{flex:1;text-align:center;border-top:1px solid #000;padding-top:4px;font-size:10px;font-weight:bold}
+        .mot-sig span{display:block;font-weight:normal;font-size:9px;color:#444;margin-top:2px}
+        .mot-footer{text-align:right;font-size:8px;color:#666;margin-top:18px}
+      </style>
+
+      <div class="mot-title">CHECKLIST ENTREGA DE MOTOCICLETAS</div>
+      <div class="mot-top">
+        <div class="mot-top-info">
+          <div>Distribuidor: <b>AutoPremium Tampico</b></div>
+          <div>Unidad: <b>${(c.vehiculoSubmarca||'').toUpperCase()}</b> &nbsp;&nbsp; Año: <b>${c.vehiculoAnio||''}</b></div>
+          <div>Color: <b>${(c.vehiculoColor||'').toUpperCase()}</b></div>
+          <div>Chasis: <b>${(c.vehiculoNIV||'').toUpperCase()}</b></div>
+        </div>
+        <div class="mot-top-right">
+          <div class="mot-fecha-box">Fecha:<b>${todayShort}</b></div>
+          <div class="mot-logo"><img src="data:image/png;base64,${BMW_LOGO_B64}" alt=""><span>BMW<br>MOTORRAD</span></div>
+        </div>
+      </div>
+
+      ${seccion('ESCRITORIO', [
+        'Explicacion términos y condiciones de Garantía',
+        'Explicacion de (BSI) Mantenimientos y Tiempos',
+        'Entrega de poliza de Garantía',
+        '01800 Asistencia Vial',
+        'Entrega de copia sin valor de factura original',
+        'Entrega de factura original pago contado (según aplique)',
+        'Entrega de copia de contrato de FS (según aplique)',
+        'Entrega de carta factura',
+        'Documentación adicional para firma'
+      ], 9)}
+
+      ${seccion('EXTERIORES', [
+        'Herramientas y manual del usuario',
+        'Explicación de la llave',
+        'Entrega de llave adicional'
+      ], 7)}
+
+      ${seccion('INTERIORES', [
+        'Asiento calefactables (en caso de que aplique)',
+        'Luces (direccionales, alta, baja, intermitentes)',
+        'Pantalla Odómetro TFT',
+        'Tipos de manejo',
+        'Guía rápida visual',
+        'Explicar Póliza de Seguro',
+        'Claxón'
+      ], 11)}
+
+      <div class="mot-rating-q">¿Cómo califica la explicación general de su BMW y la atención brindada durante la entrega?</div>
+      <div class="mot-rating">${Array.from({length:10}).map((_,i)=>`<div>${i+1}</div>`).join('')}</div>
+
+      <div class="mot-signatures">
+        <div class="mot-sig">Asesor Comercial<span>(Firma y fecha)</span></div>
+        <div class="mot-sig">Gerente de Ventas<span>(Firma y fecha)</span></div>
+        <div class="mot-sig">${nameMot}<span>Nombre y firma del cliente</span></div>
+      </div>
+      <div class="mot-footer">QMA (2007-2008)<br>Herramienta 132</div>
     </div>`;
   }
 
