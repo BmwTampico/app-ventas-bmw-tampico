@@ -2332,7 +2332,7 @@ function renderClientDetail(clientId){
   const clients = DB.get('ap_clients')||[];
   const c = clients.find(x=>x.id===clientId);
   if(!c){ navigate('dashboard'); return; }
-  const canEdit = currentUser.role==='administrador' || (currentUser.role==='vendedor' && c.vendedorId===currentUser.id);
+  const canEdit = currentUser.role==='administrador' || currentUser.role==='gerente' || (currentUser.role==='vendedor' && c.vendedorId===currentUser.id);
   const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
   const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
   const domicilio = `${c.calle} ${c.numExterior}${c.numInterior?' Int.'+c.numInterior:''}, Col. ${c.colonia}, ${c.municipio}, ${c.estado} C.P. ${c.cp}`;
