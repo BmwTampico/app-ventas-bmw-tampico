@@ -24,12 +24,18 @@
   --gray4: #f4f7fa;
   --red: #dc2626;
   --red-text: #f87171;
+  --ok-text: #4ade80;
   --green: #38a169;
   --card: #162233;
   --border: #243447;
   --text: #e2eaf5;
   --text2: #8a9bb0;
   --radius: 10px;
+  --z-nav: 99;
+  --z-header: 100;
+  --z-modal: 1000;
+  --z-toast: 1100;
+  --z-tooltip: 1200;
   --shadow: 0 4px 24px rgba(13,27,42,0.45);
 }
 /* ---- LIGHT MODE ---- */
@@ -46,6 +52,7 @@ body.theme-light {
   --gray4: #e2e8f0;
   --red: #dc2626;
   --red-text: #b91c1c;
+  --ok-text: #15803d;
   --green: #15803d;
   --card: #ffffff;
   --border: #dde3ec;
@@ -62,10 +69,8 @@ body.theme-light .role-gerente  { background: #dcfce7; color: #15803d; }
 body.theme-light .role-vendedor { background: #ffedd5; color: #c2410c; }
 body.theme-light .form-control.valid   { border-color: #16a34a; }
 body.theme-light .form-control.invalid { border-color: #dc2626; }
-body.theme-light .field-error { color: #b91c1c; }
-body.theme-light .field-ok { color: #15803d; }
-body.theme-light .toast.success .toast-icon { stroke: #15803d; }
-body.theme-light .toast.error .toast-icon { stroke: #b91c1c; }
+.toast.success .toast-icon { stroke: var(--ok-text); }
+.toast.error .toast-icon { stroke: var(--red-text); }
 body.theme-light select.form-control option { background: var(--card); }
 body.theme-light .stat-card { box-shadow: 0 1px 4px rgba(28,105,212,0.10); }
 body.theme-light .app-header { box-shadow: 0 1px 4px rgba(28,105,212,0.12); }
@@ -111,7 +116,7 @@ input,select,textarea{font-family:inherit}
 /* ===== APP SHELL ===== */
 #page-app{display:none;flex-direction:column}
 #page-app.active{display:flex}
-.app-header{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-header{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:var(--z-header)}
 .header-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:17px;color:var(--white)}
 .header-brand .brand-dot{width:54px;height:54px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center}
 .header-brand .brand-dot svg{width:18px;height:18px;fill:white}
@@ -126,7 +131,7 @@ input,select,textarea{font-family:inherit}
 .role-vendedor{background:#3d1f0a;color:#fb923c}
 
 /* ===== APP NAV ===== */
-.app-nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:99}
+.app-nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:var(--z-nav)}
 .app-nav::-webkit-scrollbar{display:none}
 .nav-item{display:flex;align-items:center;gap:7px;padding:13px 16px;font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s,transform .1s ease-out;flex-shrink:0}
 .nav-item:active{transform:scale(0.96)}
@@ -192,9 +197,9 @@ input,select,textarea{font-family:inherit}
 .form-control{background:var(--navy);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;width:100%;font-size:16px;transition:border-color .2s}
 .form-control:focus{outline:none;border-color:var(--blue)}
 .form-control.error{border-color:var(--red)}
-.field-error{font-size:12px;color:#fca5a5;margin-top:4px;display:none}
+.field-error{font-size:12px;color:var(--red-text);margin-top:4px;display:none}
 .field-error.show{display:block}
-.field-ok{font-size:12px;color:#4ade80;margin-top:4px;display:none}
+.field-ok{font-size:12px;color:var(--ok-text);margin-top:4px;display:none}
 .field-ok.show{display:block}
 .form-control.valid{border-color:var(--green)}
 .form-control.invalid{border-color:var(--red)}
@@ -262,8 +267,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .doc-select label{font-size:13px;color:var(--gray)}
 
 /* ===== MODAL ===== */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:var(--z-modal);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.open{display:flex}
+@keyframes overlay-in{from{opacity:0}}
+@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.985)}}
+.modal-overlay.open{animation:overlay-in .18s ease-out}
+.modal-overlay.open .modal{animation:modal-in .22s cubic-bezier(.25,1,.5,1)}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:800px;margin:auto;box-shadow:0 24px 80px rgba(13,27,42,.6)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
 .modal-title{font-size:17px;font-weight:700;color:var(--white)}
@@ -289,7 +298,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .doc-template .section-divider{border-top:2px solid #000;margin:16px 0;padding-top:8px}
 
 /* ===== TOAST ===== */
-.toast-container{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:calc(24px + env(safe-area-inset-right));z-index:9999;display:flex;flex-direction:column;gap:10px}
+.toast-container{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:calc(24px + env(safe-area-inset-right));z-index:var(--z-toast);display:flex;flex-direction:column;gap:10px}
 .toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;min-width:260px;max-width:380px;transform:translateX(0);opacity:1;transition:transform .3s cubic-bezier(0.16,1,0.3,1),opacity .25s ease-out}
 .toast.toast-enter{transform:translateX(120%);opacity:0}
 .toast.leaving{transform:translateX(120%);opacity:0}
@@ -300,6 +309,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .toast.error{border-color:#7f1d1d}
 .toast-icon{width:20px;height:20px;flex-shrink:0}
 @media (prefers-reduced-motion: reduce){
+  .modal-overlay.open,.modal-overlay.open .modal{animation:none}
   .toast{transition:opacity .25s ease-out}
   .toast.toast-enter,.toast.leaving{transform:none}
 }
@@ -361,12 +371,11 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 :where(button,a,[role="button"],[tabindex]):focus-visible{outline:2px solid var(--blue-light);outline-offset:2px}
 .modal:focus{outline:none}
 .back-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.breadcrumb a
 /* ===== PRINT ===== */
 @media print{
   body{background:white!important;color:#000!important}
   .app-header,.app-nav,.breadcrumb,.form-actions,.doc-actions,.doc-select,.modal-header,.modal-footer,.toast-container,button,.btn,.tabs,.stats-row,.search-bar-wrap,.section-header,.no-print{display:none!important}
-  .modal-overlay{position:static!important;background:none!important;display:block!important;padding:0!important}
+  .modal-overlay.open{position:static!important;background:none!important;display:block!important;padding:0!important}
   .modal{border:none!important;box-shadow:none!important;background:white!important;max-width:100%!important}
   .modal-body{max-height:none!important;overflow:visible!important;padding:0!important}
   .doc-template{padding:0!important}
@@ -2268,6 +2277,7 @@ const CURP_ERRORS = {
 function setCurpRfcState(input, okId, errId, valid, errMsg){
   input.classList.toggle('valid', valid);
   input.classList.toggle('invalid', !valid);
+  if(errId) input.setAttribute('aria-describedby', errId);
   const ok  = document.getElementById(okId);
   const err = document.getElementById(errId);
   if(ok)  ok.classList.toggle('show', valid);
@@ -4916,6 +4926,13 @@ function _modalClosed(ov){
 new MutationObserver(muts=>{
   for(const m of muts){
     const ov = m.target;
+    // Campos de formulario: el estado visual ".invalid" se refleja también
+    // como aria-invalid para que un lector de pantalla lo anuncie.
+    if(ov.classList && ov.classList.contains('form-control')){
+      if(ov.classList.contains('invalid') || ov.classList.contains('error')) ov.setAttribute('aria-invalid','true');
+      else ov.removeAttribute('aria-invalid');
+      continue;
+    }
     if(!ov.classList || !ov.classList.contains('modal-overlay')) continue;
     const was = (m.oldValue||'').split(/\s+/).includes('open');
     const now = ov.classList.contains('open');
@@ -5000,7 +5017,7 @@ function _capsLockWarnEl(){
     el = document.createElement('div');
     el.id = 'capslock-warning';
     el.textContent = '⚠ Bloq Mayús está activado';
-    el.style.cssText = 'position:absolute;z-index:9999;background:#3a2a00;color:#ffcf5c;border:1px solid #7a5c00;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+    el.style.cssText = 'position:absolute;z-index:var(--z-tooltip);background:#3a2a00;color:#ffcf5c;border:1px solid #7a5c00;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3)';
     document.body.appendChild(el);
   }
   return el;
