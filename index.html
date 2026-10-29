@@ -416,6 +416,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 @media(max-width:680px){
   .search-kbd-hint{display:none}
   .form-grid-2,.form-grid-3,.form-grid-4{grid-template-columns:1fr}
+  .form-grid > *{grid-column:1/-1!important}
   .app-main{padding:16px}
   .login-card{padding:28px 20px}
   .stat-card .stat-val{font-size:26px}
@@ -2441,7 +2442,7 @@ function renderClientDetail(clientId){
           <span class="notas-hint">Solo para tu uso — no aparece en ningún documento</span>
         </div>
         <div class="postit-grid" id="notas-list">${_notasListHtml(c)}</div>
-        <textarea class="notas-textarea" id="notas-vendedor" placeholder="Escribe una nota sobre este cliente..."></textarea>
+        <textarea class="notas-textarea" id="notas-vendedor" aria-label="Nota sobre este cliente" placeholder="Escribe una nota sobre este cliente..."></textarea>
         <div class="notas-pending-grid" id="notas-pending-grid"></div>
         <div class="postit-color-picker" id="postit-color-picker">
           <span class="notas-hint">Color:</span>
@@ -4176,7 +4177,7 @@ function roleSelectorHtml(selectedRole, idPrefix){
     ${roles.map(r=>`
       <label class="clickable">
         <input type="radio" name="${idPrefix}-role" value="${r.id}" ${r.id===selectedRole?'checked':''} style="display:none" onchange="updateRoleSelection('${idPrefix}')">
-        <div id="${idPrefix}-role-${r.id}" style="border:2px solid ${r.id===selectedRole?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px 8px;text-align:center;font-size:13px;font-weight:${r.id===selectedRole?'700':'600'};color:${r.id===selectedRole?'var(--blue-light)':'var(--text)'};background:${r.id===selectedRole?'rgba(28,105,212,0.12)':'transparent'};transition:all .15s">
+        <div id="${idPrefix}-role-${r.id}" style="border:2px solid ${r.id===selectedRole?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px 8px;text-align:center;font-size:13px;font-weight:${r.id===selectedRole?'700':'600'};color:${r.id===selectedRole?'var(--white)':'var(--text)'};background:${r.id===selectedRole?'rgba(28,105,212,0.12)':'transparent'};transition:all .15s">
           ${r.label}
         </div>
       </label>`).join('')}
@@ -4193,7 +4194,7 @@ function updateRoleSelection(idPrefix){
     box.style.border = `2px solid ${active?'var(--blue)':'var(--border)'}`;
     box.style.background = active?'rgba(28,105,212,0.12)':'transparent';
     box.style.fontWeight = active?'700':'600';
-    box.style.color = active?'var(--blue-light)':'var(--text)';
+    box.style.color = active?'var(--white)':'var(--text)';
   });
 }
 
