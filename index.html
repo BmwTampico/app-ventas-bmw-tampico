@@ -397,6 +397,15 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .field-compact{width:100%;font-size:16px;padding:10px 14px}
 .clickable{cursor:pointer}
 
+#novedades-overlay .modal-body{overflow-x:hidden}
+.novedades-meta{font-size:12px;color:var(--text2);margin-bottom:16px}
+.novedades-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(28,105,212,.2);color:var(--white);margin-right:6px}
+.novedades-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.novedades-list li{padding-bottom:14px;border-bottom:1px solid var(--border)}
+.novedades-list li:last-child{border-bottom:none;padding-bottom:0}
+.novedades-item-title{margin:0 0 2px;font-size:14px;font-weight:700;color:var(--white)}
+.novedades-item-text{margin:0;font-size:13px;line-height:1.5;color:var(--text2)}
+
 /* ===== PRINT ===== */
 @media print{
   body{background:white!important;color:#000!important}
@@ -910,6 +919,7 @@ function enterApp(){
     : currentUser.name.charAt(0).toUpperCase();
   navigate('dashboard');
   resetInactivityTimer();
+  setTimeout(maybeShowNovedades, 700);
 }
 
 // ============================================================
@@ -4785,6 +4795,17 @@ function renderSettings(){
         </div>
       </div>
 
+      <!-- Novedades -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:20px">
+        <div class="card-head">
+          <div class="card-title">Novedades</div>
+          <div class="card-sub">Revisa los últimos cambios del portal</div>
+        </div>
+        <div class="pad-22">
+          <button class="btn btn-secondary btn-full" onclick="openNovedades()">Ver novedades</button>
+        </div>
+      </div>
+
       ${currentUser.role==='administrador' ? `
       <!-- Respaldo de datos -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:20px">
@@ -4922,6 +4943,79 @@ document.addEventListener('click', e=>{
   box.classList.remove('show');
 });
 
+// ============================================================
+// NOVEDADES (ventana "¿Qué hay de nuevo?")
+// ============================================================
+// Para anunciar algo nuevo: agrega un objeto AL INICIO de NOVEDADES con una
+// versión distinta (se usa la fecha) y sus puntos. Cada usuario la verá una
+// sola vez al entrar; las anteriores siguen disponibles en Configuración.
+const NOVEDADES = [
+  {
+    version: '2026-10-29',
+    fecha: '29 de octubre de 2026',
+    titulo: 'Novedades del portal',
+    items: [
+      { t: 'Tu perfil', d: 'En Configuración puedes cambiar tu nombre y tu foto de perfil.' },
+      { t: 'Check List Entrega Motorrad', d: 'Al registrar una motocicleta (campo Tipo de Vehículo) aparece su checklist de entrega.' },
+      { t: 'Fecha de salida en los formatos de entrega', d: 'El Vale de Salida y los checklists de entrega usan la Fecha de Salida que capturas, no la fecha en que imprimes.' },
+      { t: 'No. de Inventario', d: 'El campo de Datos de Entrega ahora se llama No. de Inventario y se imprime en el Check List de Ventas.' },
+      { t: 'Aviso de Bloq Mayús', d: 'Si escribes una contraseña con las mayúsculas activadas, el portal te avisa.' },
+      { t: 'Instálalo en tu iPad o iPhone', d: 'Abre el portal en Safari, toca Compartir y elige "Añadir a pantalla de inicio".' },
+      { t: 'Más cómodo en tablet y celular', d: 'Botones y campos más grandes, y la captura de clientes ya no se sale de la pantalla en el celular.' }
+    ]
+  }
+];
+
+function _novedadesKey(){ return 'ap_novedades_' + (currentUser ? currentUser.id : 'anon'); }
+function _novedadesVista(){ try{ return localStorage.getItem(_novedadesKey()); }catch(e){ return null; } }
+function _novedadesMarcarVista(){ try{ localStorage.setItem(_novedadesKey(), NOVEDADES[0].version); }catch(e){} }
+
+function openNovedades(){
+  if(!NOVEDADES.length) return;
+  let ov = document.getElementById('novedades-overlay');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'novedades-overlay';
+    ov.className = 'modal-overlay';
+    ov.onclick = e=>{ if(e.target===ov) closeNovedades(); };
+    document.body.appendChild(ov);
+  }
+  const n = NOVEDADES[0];
+  const isNew = _novedadesVista() !== n.version;
+  ov.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-header">
+        <span class="modal-title">${n.titulo}</span>
+        <button class="modal-close" onclick="closeNovedades()" aria-label="Cerrar ventana">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="novedades-meta">${isNew ? '<span class="novedades-badge">Nuevo</span> ' : ''}${n.fecha}</div>
+        <ul class="novedades-list">
+          ${n.items.map(i=>`<li><h3 class="novedades-item-title">${i.t}</h3><p class="novedades-item-text">${i.d}</p></li>`).join('')}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeNovedades()">Entendido</button>
+      </div>
+    </div>`;
+  ov.classList.add('open');
+}
+
+function closeNovedades(){
+  const ov = document.getElementById('novedades-overlay');
+  if(ov) ov.classList.remove('open');
+  _novedadesMarcarVista();
+}
+
+// Se muestra una vez por versión y por usuario, sin interrumpir otros avisos.
+function maybeShowNovedades(){
+  if(!currentUser || !NOVEDADES.length) return;
+  if(typeof _recoveryMode !== 'undefined' && _recoveryMode) return;
+  if(_novedadesVista() === NOVEDADES[0].version) return;
+  if(document.querySelector('.modal-overlay.open')) return;
+  openNovedades();
+}
+
 // Accesibilidad de modales: al abrirse reciben rol de diálogo, el foco entra
 // al cuadro (sin abrir el teclado en tablet), Tab queda atrapado dentro, y al
 // cerrarse el foco vuelve al botón que lo abrió. Se detecta observando la
@@ -4989,6 +5083,8 @@ document.addEventListener('keydown', e=>{
   const userOverlay = document.getElementById('user-modal-overlay');
   const docOverlay = document.getElementById('modal-overlay');
   const searchBox = document.getElementById('search-results');
+  const novOverlay = document.getElementById('novedades-overlay');
+  if(novOverlay && novOverlay.classList.contains('open')){ closeNovedades(); return; }
   if(confirmOverlay && confirmOverlay.classList.contains('open')){ closeConfirmModal(); return; }
   if(userOverlay && userOverlay.classList.contains('open')){ closeUserModal(); return; }
   if(docOverlay && docOverlay.classList.contains('open')){ closeModal(); return; }
@@ -5007,7 +5103,7 @@ document.addEventListener('keydown', e=>{
   const t = e.target;
   const isTyping = t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT' || t.isContentEditable);
   if(isTyping) return;
-  const anyModalOpen = ['confirm-modal-overlay','user-modal-overlay','modal-overlay','recovery-modal-overlay'].some(id=>{
+  const anyModalOpen = ['confirm-modal-overlay','user-modal-overlay','modal-overlay','recovery-modal-overlay','novedades-overlay'].some(id=>{
     const el = document.getElementById(id);
     return el && el.classList.contains('open');
   });
