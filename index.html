@@ -146,7 +146,7 @@ input,select,textarea{font-family:inherit}
 .app-main{flex:1;padding:28px 24px;max-width:1100px;width:100%;margin:0 auto}
 
 /* ===== DASHBOARD ===== */
-.dash-title{font-size:24px;font-weight:700;color:var(--white);margin-bottom:4px}
+.dash-title{margin-top:0;font-size:24px;font-weight:700;color:var(--white);margin-bottom:4px}
 .dash-subtitle{font-size:14px;color:var(--gray);margin-bottom:28px}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;transition:transform .1s ease-out}
@@ -170,7 +170,7 @@ input,select,textarea{font-family:inherit}
 .search-no-result p{color:var(--gray);font-size:14px;margin-bottom:12px}
 
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.section-title{font-size:16px;font-weight:700;color:var(--text)}
+.section-title{margin:0;font-size:16px;font-weight:700;color:var(--text)}
 
 /* ===== CLIENTS TABLE ===== */
 .clients-table{width:100%;border-collapse:collapse}
@@ -321,17 +321,17 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 
 /* ===== CLIENT DETAIL ===== */
 .client-detail-header{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.client-name{font-size:22px;font-weight:800;color:var(--white)}
+.client-name{margin:0;font-size:22px;font-weight:800;color:var(--white)}
 .client-sub{font-size:14px;color:var(--gray);margin-top:4px}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:20px}
 .detail-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-.detail-card h4{font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.detail-card h3{margin-top:0;font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 .detail-field{margin-bottom:10px}
 .detail-field .lbl{font-size:12px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
 .detail-field .val{font-size:14px;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
 .notas-card{background:var(--card);border:1px solid var(--border);border-left:3px solid #d4a72c;border-radius:var(--radius);padding:20px;margin-bottom:20px}
 .notas-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.notas-head h4{display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin:0}
+.notas-head h3{display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin:0}
 .notas-hint{font-size:12px;color:var(--gray)}
 .notas-textarea{width:100%;min-height:90px;resize:vertical;background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:16px;font-family:inherit;line-height:1.5}
 .notas-textarea:focus{outline:none;border-color:#d4a72c;box-shadow:0 0 0 3px rgba(212,167,44,.3)}
@@ -377,6 +377,9 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .breadcrumb .back-btn{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;line-height:1.5;font-size:13px;font-weight:600;color:var(--text);background:var(--card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;transition:border-color .15s,color .15s}
 :where(button,a,[role="button"],[tabindex]):focus-visible{outline:2px solid var(--blue-light);outline-offset:2px}
 .modal:focus{outline:none}
+#app-content:focus{outline:none}
+.skip-link{position:fixed;left:12px;top:-64px;z-index:var(--z-tooltip);padding:12px 18px;min-height:44px;display:inline-flex;align-items:center;background:var(--blue);color:#fff;font-weight:700;font-size:14px;border-radius:var(--radius);text-decoration:none}
+.skip-link:focus{top:12px}
 .back-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 /* ===== UTILIDADES (estilos que se repetían en línea) ===== */
 .lbl-caps{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px}
@@ -521,6 +524,7 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
 
 <!-- ==================== APP ==================== -->
 <div id="page-app" class="page">
+  <a class="skip-link" href="#app-content" onclick="event.preventDefault();var m=document.getElementById('app-content');m.focus();m.scrollIntoView();">Saltar al contenido</a>
   <header class="app-header">
     <div class="header-brand" onclick="navigate('dashboard')" style="cursor:pointer" role="button" tabindex="0" aria-label="Ir al dashboard" onkeydown="if(event.key==='Enter'||event.key===' '){navigate('dashboard')}">
       <div class="brand-dot" style="background:#fff;padding:3px">
@@ -543,7 +547,7 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
     </div>
   </header>
   <nav class="app-nav" id="app-nav"><!-- rendered by JS --></nav>
-  <main class="app-main" id="app-content"><!-- rendered by JS --></main>
+  <main class="app-main" id="app-content" tabindex="-1"><!-- rendered by JS --></main>
 </div>
 
 <!-- ==================== MODAL ==================== -->
@@ -1142,7 +1146,7 @@ function renderDashboard(){
   document.getElementById('app-content').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px">
       <div>
-        <div class="dash-title">Bienvenido, ${currentUser.name}</div>
+        <h2 class="dash-title">Bienvenido, ${currentUser.name}</h2>
         <div class="dash-subtitle">Panel de control · <span class="role-pill ${roleClass()}">${currentUser.role}</span></div>
       </div>
       <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="navigate('new-client')">+ Nuevo Cliente</button></div>
@@ -1154,7 +1158,7 @@ function renderDashboard(){
       <kbd class="search-kbd-hint" aria-hidden="true">/</kbd>
     </div>
     <div class="search-results" id="search-results"></div>
-    <div class="section-header"><span class="section-title">Clientes Recientes</span></div>
+    <div class="section-header"><h3 class="section-title">Clientes Recientes</h3></div>
     <div class="table-card">
       <table class="clients-table" style="min-width:640px">
         <thead><tr><th>Nombre / Razón Social</th><th>RFC</th><th>Tipo</th><th>Vendedor</th><th>Registro</th></tr></thead>
@@ -2392,13 +2396,13 @@ function renderClientDetail(clientId){
   let extraCard = '';
   if(c.tipo==='fisica'){
     extraCard=`<div class="detail-card">
-      <h4>Datos Personales</h4>
+      <h3>Datos Personales</h3>
       ${df('CURP',c.curp)}${df('Fecha Nac.',fmtDate(c.fechaNacimiento))}${df('País Nac.',c.paisNacimiento)}${df('Actividad',c.actividad)}
       ${df('ID Oficial',c.idNombre)}${df('Folio ID',c.idFolio)}
     </div>`;
   } else {
     extraCard=`<div class="detail-card">
-      <h4>Representante Legal</h4>
+      <h3>Representante Legal</h3>
       ${df('Nombre',`${c.repNombres} ${c.repApellidoPaterno} ${c.repApellidoMaterno}`)}
       ${df('CURP Rep.',c.repCurp)}${df('RFC Rep.',c.repRfc)}${df('Giro',c.gireMercantil)}
       ${df('ID Rep.',c.repIdNombre)}${df('Folio ID',c.repIdFolio)}
@@ -2412,7 +2416,7 @@ function renderClientDetail(clientId){
     <div class="client-detail-header">
       <div>
         <span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}" style="margin-bottom:8px;display:inline-block">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span>
-        <div class="client-name">${name}</div>
+        <h2 class="client-name">${name}</h2>
         <div class="client-sub">RFC: ${rfc||'—'} · Vendedor: ${c.vendedorNombre} · Registro: ${fmtDate(c.fechaRegistro)}</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2423,12 +2427,12 @@ function renderClientDetail(clientId){
     </div>
     <div class="detail-grid">
       <div class="detail-card">
-        <h4>Contacto y Domicilio</h4>
+        <h3>Contacto y Domicilio</h3>
         ${df('Domicilio',domicilio)}${df('Teléfono',c.telefono+(c.extension?' Ext.'+c.extension:''))}${df('Correo',c.correo)}
       </div>
       ${extraCard}
       <div class="detail-card">
-        <h4>Vehículo</h4>
+        <h3>Vehículo</h3>
         ${df('Marca / Modelo',`${c.vehiculoMarca||''} ${c.vehiculoSubmarca||''}`)}
         ${df('Color',c.vehiculoColor)}
         ${df('Año-Modelo',c.vehiculoAnio)}${df('VIN / No. de Serie',c.vehiculoNIV)}
@@ -2438,7 +2442,7 @@ function renderClientDetail(clientId){
       </div></div>
       <div class="notas-card">
         <div class="notas-head">
-          <h4>${_btnIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/>',15)} Notas del Vendedor</h4>
+          <h3>${_btnIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/>',15)} Notas del Vendedor</h3>
           <span class="notas-hint">Solo para tu uso — no aparece en ningún documento</span>
         </div>
         <div class="postit-grid" id="notas-list">${_notasListHtml(c)}</div>
