@@ -12,3 +12,7 @@ amda_b64.js
 *_pages/
 Persona Fisica/
 Personal Moral/
+
+# Íconos de la app (necesarios para instalarla en la pantalla de inicio)
+!icons/
+!icons/*.png
