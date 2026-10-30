@@ -1805,7 +1805,7 @@ function renderClientForm(clientId){
       <button class="tab-btn ${activeTipo==='fisica'?'active':''}" ${isEdit?'disabled title="El tipo de persona no se puede cambiar una vez creado el cliente"':`onclick="switchTipo('fisica')"`}>Persona Física</button>
       <button class="tab-btn ${activeTipo==='moral'?'active':''}" ${isEdit?'disabled title="El tipo de persona no se puede cambiar una vez creado el cliente"':`onclick="switchTipo('moral')"`}>Persona Moral</button>
     </div>
-    <form id="client-form" onsubmit="saveClient(event,'${clientId||''}')">
+    <form id="client-form" novalidate onsubmit="saveClient(event,'${clientId||''}')">
       <div class="step-nav no-print">
         <button type="button" class="step-pill active" data-step="cliente" onclick="goToFormStep('cliente')">1. Cliente</button>
         <button type="button" class="step-pill" data-step="vehiculo" onclick="goToFormStep('vehiculo')">2. Vehículo</button>
@@ -1839,7 +1839,7 @@ function renderClientForm(clientId){
             <div class="form-group"><label for="f-submarca">Modelo</label><input class="form-control" id="f-submarca" placeholder="X3 xDrive30, Serie 3 320i..." value="${v(client,'vehiculoSubmarca','')}"></div>
             <div class="form-group"><label for="f-color">Color</label><input class="form-control" id="f-color" value="${v(client,'vehiculoColor','')}"></div>
             <div class="form-group"><label for="f-anio">Año-Modelo</label><input class="form-control" id="f-anio" placeholder="2026" value="${v(client,'vehiculoAnio','')}"></div>
-            <div class="form-group"><label for="f-niv">VIN / No. de Serie</label><input class="form-control" id="f-niv" placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
+            <div class="form-group"><label for="f-niv">VIN / No. de Serie <span class="req">*</span></label><input class="form-control" id="f-niv" required placeholder="17 caracteres" value="${v(client,'vehiculoNIV','')}"></div>
             <div class="form-group"><label for="f-motor">No. de Motor</label><input class="form-control" id="f-motor" value="${v(client,'vehiculoMotor','')}"></div>
             <div class="form-group"><label for="f-capacidad">Capacidad</label><input class="form-control" id="f-capacidad" placeholder="5 personas" value="${v(client,'vehiculoCapacidad','')}"></div>
             <div class="form-group"><label for="f-condicion">Condición del Vehículo</label>
@@ -1851,7 +1851,7 @@ function renderClientForm(clientId){
           </div>
           <h4 class="form-subsection-title">Venta y entrega</h4>
           <div class="form-grid form-grid-3">
-            <div class="form-group"><label for="f-precio">Precio de Lista</label><input class="form-control" id="f-precio" type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
+            <div class="form-group"><label for="f-precio">Precio de Lista <span class="req">*</span></label><input class="form-control" id="f-precio" required type="text" inputmode="decimal" placeholder="$0" value="${fmtCurrencyVal(v(client,'vehiculoPrecio',''))}" oninput="onCurrencyInput(this);calcMontoTotal()"></div>
             <div class="form-group"><label for="f-pago">Forma de Pago</label>
               <select class="form-control" id="f-pago">
                 <option value="contado"        ${v(client,'formaPago','contado')==='contado'?'selected':''}>Contado</option>
@@ -1980,6 +1980,8 @@ const REQUIRED_FIELDS_FISICA = [
   {id:'f-appaterno', label:'Apellido Paterno'},
   {id:'f-apmaterno', label:'Apellido Materno'},
   {id:'f-fnac',      label:'Fecha de Nacimiento'},
+  {id:'f-pnac',      label:'País de Nacimiento'},
+  {id:'f-pnac2',     label:'País de Nacionalidad'},
   {id:'f-curp',      label:'CURP'},
   {id:'f-rfc',       label:'RFC'},
   {id:'f-calle',     label:'Calle'},
@@ -1988,6 +1990,7 @@ const REQUIRED_FIELDS_FISICA = [
   {id:'f-municipio', label:'Municipio'},
   {id:'f-ciudad',    label:'Ciudad'},
   {id:'f-estado',    label:'Estado'},
+  {id:'f-pais',      label:'País'},
   {id:'f-cp',        label:'Código Postal'},
   {id:'f-tel',       label:'Teléfono'},
   {id:'f-correo',    label:'Correo Electrónico'},
@@ -1996,6 +1999,7 @@ const REQUIRED_FIELDS_MORAL = [
   {id:'f-razon',      label:'Razón Social'},
   {id:'f-rfc-moral',  label:'RFC de la empresa'},
   {id:'f-fconst',     label:'Fecha de Constitución'},
+  {id:'f-pnac-moral', label:'País de Nacionalidad'},
   {id:'f-giro',       label:'Giro Mercantil'},
   {id:'f-calle',      label:'Calle'},
   {id:'f-numext',     label:'Número Exterior'},
@@ -2003,6 +2007,7 @@ const REQUIRED_FIELDS_MORAL = [
   {id:'f-municipio',  label:'Municipio'},
   {id:'f-ciudad',     label:'Ciudad'},
   {id:'f-estado',     label:'Estado'},
+  {id:'f-pais',      label:'País'},
   {id:'f-cp',         label:'Código Postal'},
   {id:'f-tel',        label:'Teléfono'},
   {id:'f-correo',     label:'Correo Electrónico'},
@@ -2130,8 +2135,8 @@ function buildFisicaFields(c){
       <div class="form-group"><label for="f-appaterno">Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-appaterno" required value="${pv('apellidoPaterno')}"></div>
       <div class="form-group"><label for="f-apmaterno">Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-apmaterno" required value="${pv('apellidoMaterno')}"></div>
       <div class="form-group"><label for="f-fnac">Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-fnac" type="date" required value="${v(c,'fechaNacimiento')}"></div>
-      <div class="form-group"><label for="f-pnac">País de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-pnac" value="${v(c,'paisNacimiento','México')}"></div>
-      <div class="form-group"><label for="f-pnac2">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac2" value="${v(c,'paisNacionalidad','México')}"></div>
+      <div class="form-group"><label for="f-pnac">País de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-pnac" required value="${v(c,'paisNacimiento','México')}"></div>
+      <div class="form-group"><label for="f-pnac2">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac2" required value="${v(c,'paisNacionalidad','México')}"></div>
       <div class="form-group"><label for="f-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this);curpAutofill(this)" value="${v(c,'curp')}"><div class="field-error" id="e-curp"></div><div class="field-ok" id="ok-curp">✓ CURP válido</div></div>
       <div class="form-group"><label for="f-rfc">RFC <span class="req">*</span></label><input class="form-control" id="f-rfc" required maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'rfc')}"><div class="field-error" id="e-rfc"></div><div class="field-ok" id="ok-rfc">✓ RFC válido</div></div>
       <div class="form-group"><label for="f-actividad">Actividad / Ocupación</label><input class="form-control" id="f-actividad" value="${v(c,'actividad')}"></div>
@@ -2182,7 +2187,7 @@ function buildMoralFields(c){
       <div class="form-group" style="grid-column:span 2"><label for="f-razon">Denominación o Razón Social <span class="req">*</span></label><input class="form-control" id="f-razon" required value="${pv('razonSocial')}"></div>
       <div class="form-group"><label for="f-rfc-moral">RFC <span class="req">*</span></label><input class="form-control" id="f-rfc-moral" required maxlength="12" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCMoral(this)" value="${v(c,'rfcMoral')}"><div class="field-error" id="e-rfc-moral"></div><div class="field-ok" id="ok-rfc-moral">✓ RFC válido</div></div>
       <div class="form-group"><label for="f-fconst">Fecha de Constitución <span class="req">*</span></label><input class="form-control" id="f-fconst" type="date" required value="${v(c,'fechaConstitucion')}"></div>
-      <div class="form-group"><label for="f-pnac-moral">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac-moral" value="${v(c,'paisNacionalidad','México')}"></div>
+      <div class="form-group"><label for="f-pnac-moral">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac-moral" required value="${v(c,'paisNacionalidad','México')}"></div>
       <div class="form-group"><label for="f-giro">Actividad / Giro Mercantil <span class="req">*</span></label><input class="form-control" id="f-giro" required value="${v(c,'gireMercantil')}"></div>
       <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
     </div>
@@ -2270,6 +2275,7 @@ function calcMontoTotal(){
 
 
 function g(id){ const el=document.getElementById(id); return el?el.value.trim():'' }
+function _correoValido(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
 async function saveClient(e, existingId){
   e.preventDefault();
@@ -2294,6 +2300,8 @@ async function saveClient(e, existingId){
     if(curpEl && curpEl.value.trim() && !validateCURP(curpEl)) missing.push({id:'f-curp', label:'CURP (formato inválido)'});
     const rfcEl = document.getElementById('f-rfc');
     if(rfcEl && rfcEl.value.trim() && !validateRFCFisica(rfcEl)) missing.push({id:'f-rfc', label:'RFC (formato inválido)'});
+    const correoEl = document.getElementById('f-correo');
+    if(correoEl && correoEl.value.trim() && !_correoValido(correoEl.value.trim())) missing.push({id:'f-correo', label:'Correo Electrónico (formato inválido)'});
     if(missing.length){
       _focusStepField(document.getElementById(missing[0].id));
       toast(_missingFieldsMsg(missing), 'error');
@@ -2322,6 +2330,8 @@ async function saveClient(e, existingId){
     if(repCurpEl && repCurpEl.value.trim() && !validateCURP(repCurpEl)) missing.push({id:'f-rep-curp', label:'CURP del Representante (formato inválido)'});
     const repRfcEl = document.getElementById('f-rep-rfc');
     if(repRfcEl && repRfcEl.value.trim() && !validateRFCFisica(repRfcEl)) missing.push({id:'f-rep-rfc', label:'RFC del Representante (formato inválido)'});
+    const correoEl = document.getElementById('f-correo');
+    if(correoEl && correoEl.value.trim() && !_correoValido(correoEl.value.trim())) missing.push({id:'f-correo', label:'Correo Electrónico (formato inválido)'});
     if(missing.length){
       _focusStepField(document.getElementById(missing[0].id));
       toast(_missingFieldsMsg(missing), 'error');
