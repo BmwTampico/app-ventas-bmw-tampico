@@ -28,6 +28,7 @@
   --red: #dc2626;
   --red-text: #f87171;
   --ok-text: #4ade80;
+  --warn-text: #fbbf24;
   --green: #38a169;
   --card: #162233;
   --border: #243447;
@@ -56,6 +57,7 @@ body.theme-light {
   --red: #dc2626;
   --red-text: #b91c1c;
   --ok-text: #15803d;
+  --warn-text: #92400e;
   --green: #15803d;
   --card: #ffffff;
   --border: #dde3ec;
@@ -65,6 +67,7 @@ body.theme-light {
 }
 body.theme-light .clients-table tr:hover td { background: #f0f5ff; }
 body.theme-light .form-group label { color: var(--text2); }
+body.theme-light .docs-chip-ok { color: #14532d; }
 body.theme-light .search-item:hover { background: #f0f5ff; }
 body.theme-light .tipo-fisica { background: #e2e8f0; color: #475569; }
 body.theme-light .tipo-moral  { background: #e0f2fe; color: #0369a1; }
@@ -397,6 +400,13 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .field-compact{width:100%;font-size:16px;padding:10px 14px}
 .clickable{cursor:pointer}
 
+.docs-chip{display:inline-block;min-width:44px;text-align:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;background:var(--navy2);color:var(--text2);font-variant-numeric:tabular-nums}
+.docs-chip-ok{background:rgba(56,161,105,.18);color:var(--ok-text)}
+.doc-missing{margin-top:6px;font-size:12px;color:var(--warn-text)}
+.modal-warning{display:none;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:10px 24px;border-bottom:1px solid var(--border);background:rgba(251,191,36,.10);color:var(--warn-text);font-size:13px}
+.modal-warning .btn{flex-shrink:0}
+.field-hint{font-size:12px;color:var(--text2);margin-top:4px}
+.field-hint-warn{color:var(--warn-text)}
 #novedades-overlay .modal-body{overflow-x:hidden}
 .update-banner{position:fixed;left:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:var(--z-toast);display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:calc(100vw - 48px);padding:10px 14px;background:var(--card);border:1px solid var(--blue);border-radius:var(--radius);box-shadow:var(--shadow);font-size:14px;color:var(--text)}
 @media(max-width:820px){
@@ -410,6 +420,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--blue)}
 .novedades-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
 .novedades-list li{padding-bottom:14px;border-bottom:1px solid var(--border)}
 .novedades-list li:last-child{border-bottom:none;padding-bottom:0}
+.novedades-list + .novedades-meta{margin-top:22px}
 .novedades-item-title{margin:0 0 2px;font-size:14px;font-weight:700;color:var(--white)}
 .novedades-item-text{margin:0;font-size:13px;line-height:1.5;color:var(--text2)}
 
@@ -587,6 +598,7 @@ button:disabled,.btn:disabled{opacity:.7;cursor:not-allowed}
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
+    <div class="modal-warning" id="modal-warning" role="status"></div>
     <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
@@ -1171,7 +1183,7 @@ function renderDashboard(){
     <div class="stats-row">${statsHtml}</div>
     <div class="search-bar-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" class="search-input" id="dash-search" placeholder="Buscar cliente por nombre o RFC..." oninput="debounceCall('dash-search', ()=>liveSearch(this.value))" aria-label="Buscar cliente por nombre o RFC">
+      <input type="text" class="search-input" id="dash-search" placeholder="Buscar por nombre, RFC, VIN, placas o factura..." oninput="debounceCall('dash-search', ()=>liveSearch(this.value))" aria-label="Buscar cliente por nombre, RFC, VIN, placas o factura">
       <kbd class="search-kbd-hint" aria-hidden="true">/</kbd>
     </div>
     <div class="search-results" id="search-results"></div>
@@ -1196,25 +1208,154 @@ function debounceCall(key, fn, delay=220){
   _debounceTimers[key] = setTimeout(fn, delay);
 }
 
+// ============================================================
+// BÚSQUEDA, AVANCE DE DOCUMENTOS Y DATOS FALTANTES
+// ============================================================
+// Búsqueda sin acentos ni mayúsculas. Devuelve la etiqueta del dato que
+// coincidió ('Nombre', 'RFC', 'VIN', ...) o null si no hay coincidencia.
+function _normSearch(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function _compactSearch(s){ return _normSearch(s).replace(/[^a-z0-9]/g,''); }
+function _clientMatch(c, q, withVendor){
+  const nq = _normSearch(q).trim();
+  if(!nq) return 'Nombre';
+  const cq = _compactSearch(q);
+  const {name, rfc} = _clientNameRfc(c);
+  const rep = c.tipo==='moral' ? `${c.repNombres||''} ${c.repApellidoPaterno||''} ${c.repApellidoMaterno||''}` : '';
+  const texto = [['Nombre',name],['RFC',rfc],['Representante',rep]];
+  if(withVendor) texto.push(['Vendedor', c.vendedorNombre]);
+  for(const [lbl,val] of texto){ if(val && _normSearch(val).includes(nq)) return lbl; }
+  // VIN, placas, factura e inventario: también se encuentran sin guiones ni espacios
+  const codigos = [['VIN',c.vehiculoNIV],['Placas',c.entregaPlacas],['Factura',c.entregaNoFactura],['Inventario',c.entregaNoOrden]];
+  for(const [lbl,val] of codigos){
+    if(!val) continue;
+    if(_normSearch(val).includes(nq) || (cq.length>=3 && _compactSearch(val).includes(cq))) return lbl;
+  }
+  return null;
+}
+
+// Quién puede editar un cliente: administrador y gerente, o el vendedor dueño.
+function _canEditClient(c){
+  return currentUser.role==='administrador' || currentUser.role==='gerente' || (currentUser.role==='vendedor' && c.vendedorId===currentUser.id);
+}
+
+// Avance de documentos: impresos / aplicables a este cliente.
+function _docsProgress(c){
+  const ids = _docsForClient(c).map(d=>d.id);
+  const printed = Array.isArray(c._printed) ? c._printed : [];
+  return { done: ids.filter(id=>printed.includes(id)).length, total: ids.length };
+}
+function _docsChipHtml(c){
+  const p = _docsProgress(c);
+  const cls = p.total>0 && p.done===p.total ? 'docs-chip docs-chip-ok' : 'docs-chip';
+  return `<span class="${cls}" title="${p.done} de ${p.total} documentos impresos">${p.done}/${p.total}</span>`;
+}
+
+// Datos que cada formato necesita además de los obligatorios del cliente.
+const _R_VEH = [['vehiculoSubmarca','Modelo'],['vehiculoAnio','Año-modelo'],['vehiculoColor','Color'],['vehiculoNIV','VIN / Serie']];
+const _R_MOD_NIV = [['vehiculoSubmarca','Modelo'],['vehiculoNIV','VIN / Serie']];
+const _R_PRECIO = [['vehiculoPrecio','Precio de lista']];
+const _R_SALIDA = [['entregaFechaSalida','Fecha de salida']];
+const _R_FACTURA = [['entregaNoFactura','No. de factura']];
+const DOC_REQUIREMENTS = {
+  'pedido': [..._R_VEH, ..._R_PRECIO],
+  'cv-contado': [..._R_VEH, ..._R_PRECIO],
+  'cv-tasa': [..._R_VEH, ..._R_PRECIO, ['montoFinanciar','Monto a financiar']],
+  'bsi-plus': [['vehiculoSubmarca','Modelo'],['vehiculoAnio','Año-modelo'],['vehiculoNIV','VIN / Serie']],
+  'entregas': [..._R_SALIDA, ..._R_FACTURA, ..._R_MOD_NIV],
+  'salida-unidad': [..._R_VEH, ..._R_FACTURA],
+  'checklist': [['entregaNoOrden','No. de inventario']],
+  'entrega-unidad': [..._R_SALIDA, ..._R_MOD_NIV],
+  'entrega-final': [..._R_SALIDA, ..._R_MOD_NIV],
+  'checklist-motorrad': [..._R_SALIDA, ..._R_VEH]
+};
+function _docMissing(docId, c){
+  return (DOC_REQUIREMENTS[docId]||[])
+    .filter(([k])=> String(c[k]==null?'':c[k]).trim()==='' || ((k==='vehiculoPrecio'||k==='montoFinanciar') && !Number(c[k])))
+    .map(([,lbl])=>lbl);
+}
+function _docMissingHtml(docId, c){
+  const m = _docMissing(docId, c);
+  return m.length ? `<div class="doc-missing">Falta: ${m.join(', ')}</div>` : '';
+}
+// Aviso sobre la vista previa/impresión (no se imprime ni bloquea nada).
+function _setModalWarning(docIds, c){
+  const box = document.getElementById('modal-warning');
+  if(!box) return;
+  const lista = _docsForClient(c);
+  const items = docIds.map(id=>({t:((lista.find(d=>d.id===id)||{}).title)||docTitle(id), m:_docMissing(id,c)})).filter(x=>x.m.length);
+  if(!items.length){ box.style.display='none'; box.innerHTML=''; return; }
+  const texto = items.length===1
+    ? `Faltan datos en este formato: ${items[0].m.join(', ')}.`
+    : 'Faltan datos: ' + items.map(x=>`${x.t} (${x.m.join(', ')})`).join('; ') + '.';
+  const btn = _canEditClient(c)
+    ? `<button type="button" class="btn btn-secondary btn-sm" onclick="closeModal();navigate('edit-client',{clientId:'${c.id}'})">Completar datos del cliente</button>`
+    : '';
+  box.innerHTML = `<span>${texto}</span>${btn}`;
+  box.style.display = 'flex';
+}
+
+// Aviso pequeño bajo un campo (sugerencias o advertencias que no bloquean).
+function _setFieldHint(input, text, kind){
+  if(!input || !input.parentElement) return;
+  let h = input.parentElement.querySelector('.field-hint[data-for="'+input.id+'"]');
+  if(!text){ if(h) h.remove(); return; }
+  if(!h){ h = document.createElement('div'); h.dataset.for = input.id; input.parentElement.appendChild(h); }
+  h.className = 'field-hint' + (kind==='warn' ? ' field-hint-warn' : '');
+  h.textContent = text;
+}
+
+// Al completar la CURP (18 caracteres) se llena la fecha de nacimiento y se
+// sugiere el inicio del RFC (sus primeros 10 caracteres suelen coincidir con
+// los de la CURP; solo falta la homoclave). Nunca pisa lo que el usuario ya
+// escribió: solo llena campos vacíos o los que el propio portal llenó antes.
+function curpAutofill(input){
+  const isRep = input.id==='f-rep-curp';
+  const fnac = document.getElementById(isRep?'f-rep-fnac':'f-fnac');
+  const rfc = document.getElementById(isRep?'f-rep-rfc':'f-rfc');
+  const v = input.value.trim().toUpperCase();
+  if(!fnac) return;
+  if(v.length!==18){ _setFieldHint(fnac,''); return; }
+  const m = v.match(/^[A-Z]{4}(\d{2})(\d{2})(\d{2})/);
+  if(!m) return;
+  const yy = +m[1], mm = +m[2], dd = +m[3];
+  const siglo = /\d/.test(v[16]) ? 1900 : 2000; // carácter 17: dígito = nació antes del 2000; letra = 2000 o después
+  const f = new Date(siglo+yy, mm-1, dd);
+  if(f.getFullYear()!==siglo+yy || f.getMonth()!==mm-1 || f.getDate()!==dd) return;
+  const iso = `${siglo+yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+  if(!fnac.value || fnac.dataset.auto===fnac.value){
+    fnac.value = iso; fnac.dataset.auto = iso;
+    fnac.dispatchEvent(new Event('input',{bubbles:true}));
+    _setFieldHint(fnac, 'Tomada de la CURP.');
+  } else if(fnac.value !== iso){
+    _setFieldHint(fnac, `No coincide con la fecha de la CURP (${iso.split('-').reverse().join('/')}). Revisa ambos datos.`, 'warn');
+    fnac.addEventListener('change', ()=>curpAutofill(input), {once:true});
+  } else {
+    _setFieldHint(fnac, '');
+  }
+  if(rfc && (!rfc.value || rfc.dataset.auto===rfc.value)){
+    const pref = v.slice(0,10);
+    rfc.value = pref; rfc.dataset.auto = pref;
+    _setFieldHint(rfc, 'Sugerido desde la CURP: completa los 3 caracteres de la homoclave.');
+    // Al llegar con Tab el navegador selecciona todo el texto; el cursor va al final para no borrar lo sugerido
+    rfc.addEventListener('focus', ()=>setTimeout(()=>{ try{ rfc.setSelectionRange(rfc.value.length, rfc.value.length); }catch(e){} },0), {once:true});
+  }
+}
+
 function liveSearch(q){
   const box = document.getElementById('search-results');
   if(!q||q.length<2){ box.classList.remove('show'); return; }
   const clients = getVisibleClients();
-  const lq = q.toLowerCase();
-  const found = clients.filter(c=>{
-    const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
-    const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
-    return name.toLowerCase().includes(lq)||(rfc&&rfc.toLowerCase().includes(lq));
-  });
+  const matches = new Map();
+  const found = clients.filter(c=>{ const m = _clientMatch(c, q, false); if(m) matches.set(c.id, m); return !!m; });
   let html='';
   if(found.length===0){
-    html=`<div class="search-no-result"><p>No se encontró ningún cliente con ese nombre o RFC.</p><button class="btn btn-primary btn-sm" onclick="navigate('new-client',{prefill:document.getElementById('dash-search').value.trim()})">+ Registrar nuevo cliente</button></div>`;
+    html=`<div class="search-no-result"><p>No se encontró ningún cliente con esa búsqueda.</p><button class="btn btn-primary btn-sm" onclick="navigate('new-client',{prefill:document.getElementById('dash-search').value.trim()})">+ Registrar nuevo cliente</button></div>`;
   } else {
     found.slice(0,8).forEach(c=>{
       const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
       const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
       html+=`<div class="search-item" onclick="navigate('client-detail',{clientId:'${c.id}'})" role="button" tabindex="0" aria-label="Ver cliente ${name}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-        <div><div class="search-item-name">${name}</div><div class="search-item-sub">${rfc||''} · ${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</div></div>
+        <div><div class="search-item-name">${name}</div><div class="search-item-sub">${(()=>{ const m = matches.get(c.id); const extra = { VIN:c.vehiculoNIV, Placas:c.entregaPlacas, Factura:c.entregaNoFactura, Inventario:c.entregaNoOrden }[m]; return extra ? m+': '+extra : (rfc||''); })()} · ${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</div></div>
         <span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'PF':'PM'}</span>
       </div>`;
     });
@@ -1301,14 +1442,14 @@ function _clientNameRfc(c){
 function _buildMyClientsRows(clients){
   if(clients.length===0){
     if(_myClientsAll.length===0){
-      return `<tr><td colspan="6"><div class="empty-state">
+      return `<tr><td colspan="7"><div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         <p style="font-weight:600;color:var(--text);margin-bottom:6px">¡Aún no tienes clientes registrados!</p>
         <p style="margin-bottom:18px">Comienza capturando los datos de tu primer cliente para generar su expediente y documentos automáticamente.</p>
         <button class="btn btn-primary btn-sm" onclick="navigate('new-client')">+ Registrar mi primer cliente</button>
       </div></td></tr>`;
     }
-    return `<tr><td colspan="6"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No se encontraron clientes con ese criterio de búsqueda</p></div></td></tr>`;
+    return `<tr><td colspan="7"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No se encontraron clientes con ese criterio de búsqueda</p></div></td></tr>`;
   }
   return clients.map(c=>{
     const {name, rfc} = _clientNameRfc(c);
@@ -1319,6 +1460,7 @@ function _buildMyClientsRows(clients){
       <td><span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span></td>
       <td>${c.telefono||'—'}</td>
       <td>${c.correo||'—'}</td>
+      <td>${_docsChipHtml(c)}</td>
       <td>${fecha}</td>
     </tr>`;
   }).join('');
@@ -1393,11 +1535,8 @@ function loadMoreMyClients(){
 
 function filterMyClients(query){
   _myClientsQuery = query.trim();
-  const q = _myClientsQuery.toLowerCase();
-  _myClientsFiltered = !q ? _myClientsAll : _myClientsAll.filter(c=>{
-    const {name, rfc} = _clientNameRfc(c);
-    return (name&&name.toLowerCase().includes(q)) || (rfc&&rfc.toLowerCase().includes(q));
-  });
+  const q = _myClientsQuery;
+  _myClientsFiltered = !q ? _myClientsAll : _myClientsAll.filter(c=>!!_clientMatch(c, q, false));
   _myClientsVisible = PAGE_SIZE;
   _renderMyClientsTable();
 }
@@ -1423,12 +1562,12 @@ function renderMyClients(){
     </div>
     <div class="search-bar-wrap" style="margin-bottom:14px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" class="search-input" id="my-clients-search" placeholder="Filtrar por nombre o RFC..." oninput="debounceCall('my-clients-search', ()=>filterMyClients(this.value))" aria-label="Filtrar clientes por nombre o RFC">
+      <input type="text" class="search-input" id="my-clients-search" placeholder="Filtrar por nombre, RFC, VIN, placas o factura..." oninput="debounceCall('my-clients-search', ()=>filterMyClients(this.value))" aria-label="Filtrar clientes por nombre, RFC, VIN, placas o factura">
     </div>
     <p id="my-clients-count" class="page-sub">Mostrando ${Math.min(_myClientsVisible,_myClientsAll.length)} de ${_myClientsAll.length} cliente(s) registrados a tu nombre</p>
     <div class="table-card">
       <table class="clients-table" style="min-width:640px">
-        <thead><tr>${_sortTh('my','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th><th>Teléfono</th><th>Correo Electrónico</th>${_sortTh('my','fecha','Registro')}</tr></thead>
+        <thead><tr>${_sortTh('my','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th><th>Teléfono</th><th>Correo Electrónico</th><th>Documentos</th>${_sortTh('my','fecha','Registro')}</tr></thead>
         <tbody id="my-clients-tbody">${rows}</tbody>
       </table>
     </div>
@@ -1499,7 +1638,7 @@ function exportMyClientsExcel(){
 
 function _buildAllClientsRows(clients){
   if(clients.length===0){
-    return `<tr><td colspan="7"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No se encontraron clientes con ese criterio de búsqueda</p></div></td></tr>`;
+    return `<tr><td colspan="8"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>No se encontraron clientes con ese criterio de búsqueda</p></div></td></tr>`;
   }
   return clients.map(c=>{
     const {name, rfc} = _clientNameRfc(c);
@@ -1511,6 +1650,7 @@ function _buildAllClientsRows(clients){
       <td>${c.vendedorNombre||'—'}</td>
       <td>${c.telefono||'—'}</td>
       <td>${c.correo||'—'}</td>
+      <td>${_docsChipHtml(c)}</td>
       <td>${fecha}</td>
     </tr>`;
   }).join('');
@@ -1543,11 +1683,8 @@ function loadMoreAllClients(){
 
 function filterAllClients(query){
   _allClientsQuery = query.trim();
-  const q = _allClientsQuery.toLowerCase();
-  _allClientsFiltered = !q ? _allClientsAll : _allClientsAll.filter(c=>{
-    const {name, rfc} = _clientNameRfc(c);
-    return (name&&name.toLowerCase().includes(q)) || (rfc&&rfc.toLowerCase().includes(q)) || (c.vendedorNombre&&c.vendedorNombre.toLowerCase().includes(q));
-  });
+  const q = _allClientsQuery;
+  _allClientsFiltered = !q ? _allClientsAll : _allClientsAll.filter(c=>!!_clientMatch(c, q, true));
   _allClientsVisible = PAGE_SIZE;
   _renderAllClientsTable();
 }
@@ -1574,12 +1711,12 @@ function renderAllClients(){
     </div>
     <div class="search-bar-wrap" style="margin-bottom:14px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" class="search-input" id="all-clients-search" placeholder="Filtrar por nombre, RFC o vendedor..." oninput="debounceCall('all-clients-search', ()=>filterAllClients(this.value))" aria-label="Filtrar clientes por nombre, RFC o vendedor">
+      <input type="text" class="search-input" id="all-clients-search" placeholder="Filtrar por nombre, RFC, VIN, placas, factura o vendedor..." oninput="debounceCall('all-clients-search', ()=>filterAllClients(this.value))" aria-label="Filtrar clientes por nombre, RFC, VIN, placas, factura o vendedor">
     </div>
     <p id="all-clients-count" class="page-sub">Mostrando ${Math.min(_allClientsVisible,_allClientsAll.length)} de ${_allClientsAll.length} cliente(s) registrados por todos los vendedores</p>
     <div class="table-card">
       <table class="clients-table" style="min-width:640px">
-        <thead><tr>${_sortTh('all','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th>${_sortTh('all','vendedor','Vendedor')}<th>Teléfono</th><th>Correo Electrónico</th>${_sortTh('all','fecha','Registro')}</tr></thead>
+        <thead><tr>${_sortTh('all','nombre','Nombre / Razón Social')}<th>RFC</th><th>Tipo</th>${_sortTh('all','vendedor','Vendedor')}<th>Teléfono</th><th>Correo Electrónico</th><th>Documentos</th>${_sortTh('all','fecha','Registro')}</tr></thead>
         <tbody id="all-clients-tbody">${rows}</tbody>
       </table>
     </div>
@@ -1992,7 +2129,7 @@ function buildFisicaFields(c){
       <div class="form-group"><label for="f-fnac">Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-fnac" type="date" required value="${v(c,'fechaNacimiento')}"></div>
       <div class="form-group"><label for="f-pnac">País de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-pnac" value="${v(c,'paisNacimiento','México')}"></div>
       <div class="form-group"><label for="f-pnac2">País de Nacionalidad <span class="req">*</span></label><input class="form-control" id="f-pnac2" value="${v(c,'paisNacionalidad','México')}"></div>
-      <div class="form-group"><label for="f-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'curp')}"><div class="field-error" id="e-curp"></div><div class="field-ok" id="ok-curp">✓ CURP válido</div></div>
+      <div class="form-group"><label for="f-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this);curpAutofill(this)" value="${v(c,'curp')}"><div class="field-error" id="e-curp"></div><div class="field-ok" id="ok-curp">✓ CURP válido</div></div>
       <div class="form-group"><label for="f-rfc">RFC <span class="req">*</span></label><input class="form-control" id="f-rfc" required maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'rfc')}"><div class="field-error" id="e-rfc"></div><div class="field-ok" id="ok-rfc">✓ RFC válido</div></div>
       <div class="form-group"><label for="f-actividad">Actividad / Ocupación</label><input class="form-control" id="f-actividad" value="${v(c,'actividad')}"></div>
       <div class="form-group"><label for="f-cfdi">CFDI</label><input class="form-control" id="f-cfdi" placeholder="Ej. Equipo de Transporte" value="${v(c,'cfdi','Equipo de Transporte')}"></div>
@@ -2078,7 +2215,7 @@ function buildMoralFields(c){
       <div class="form-group"><label for="f-rep-pat">Apellido Paterno <span class="req">*</span></label><input class="form-control" id="f-rep-pat" required value="${v(c,'repApellidoPaterno')}"></div>
       <div class="form-group"><label for="f-rep-mat">Apellido Materno <span class="req">*</span></label><input class="form-control" id="f-rep-mat" required value="${v(c,'repApellidoMaterno')}"></div>
       <div class="form-group"><label for="f-rep-fnac">Fecha de Nacimiento <span class="req">*</span></label><input class="form-control" id="f-rep-fnac" type="date" required value="${v(c,'repFechaNacimiento')}"></div>
-      <div class="form-group"><label for="f-rep-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-rep-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this)" value="${v(c,'repCurp')}"><div class="field-error" id="e-rep-curp"></div><div class="field-ok" id="ok-rep-curp">✓ CURP válido</div></div>
+      <div class="form-group"><label for="f-rep-curp">CURP <span class="req">*</span></label><input class="form-control" id="f-rep-curp" required maxlength="18" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateCURP(this);curpAutofill(this)" value="${v(c,'repCurp')}"><div class="field-error" id="e-rep-curp"></div><div class="field-ok" id="ok-rep-curp">✓ CURP válido</div></div>
       <div class="form-group"><label for="f-rep-rfc">RFC del Representante</label><input class="form-control" id="f-rep-rfc" maxlength="13" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();validateRFCFisica(this)" value="${v(c,'repRfc')}"><div class="field-error" id="e-rep-rfc"></div><div class="field-ok" id="ok-rep-rfc">✓ RFC válido</div></div>
       <div class="form-group"><label for="f-rep-id-nombre">Identificación Oficial</label>
         <select class="form-control" id="f-rep-id-nombre">
@@ -2339,6 +2476,7 @@ function validateCURP(input){
 }
 
 function validateRFCFisica(input){
+  _setFieldHint(input, '');
   const val = input.value.trim();
   if(val.length === 0){ input.classList.remove('valid','invalid'); clearValidation(input); return true; }
   const suffix = input.id; // f-rfc or f-rep-rfc
@@ -2405,7 +2543,7 @@ function renderClientDetail(clientId){
   const clients = DB.get('ap_clients')||[];
   const c = clients.find(x=>x.id===clientId);
   if(!c){ navigate('dashboard'); return; }
-  const canEdit = currentUser.role==='administrador' || currentUser.role==='gerente' || (currentUser.role==='vendedor' && c.vendedorId===currentUser.id);
+  const canEdit = _canEditClient(c);
   const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
   const rfc = c.tipo==='fisica'?c.rfc:c.rfcMoral;
   const domicilio = `${c.calle} ${c.numExterior}${c.numInterior?' Int.'+c.numInterior:''}, Col. ${c.colonia}, ${c.municipio}, ${c.estado} C.P. ${c.cp}`;
@@ -2434,7 +2572,7 @@ function renderClientDetail(clientId){
       <div>
         <span class="badge-tipo ${c.tipo==='fisica'?'tipo-fisica':'tipo-moral'}" style="margin-bottom:8px;display:inline-block">${c.tipo==='fisica'?'Persona Física':'Persona Moral'}</span>
         <h2 class="client-name">${name}</h2>
-        <div class="client-sub">RFC: ${rfc||'—'} · Vendedor: ${c.vendedorNombre} · Registro: ${fmtDate(c.fechaRegistro)}</div>
+        <div class="client-sub">RFC: ${rfc||'—'} · Vendedor: ${c.vendedorNombre} · Registro: ${fmtDate(c.fechaRegistro)} · Documentos: ${_docsProgress(c).done} de ${_docsProgress(c).total} impresos</div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="navigate('documents',{clientId:'${c.id}'})">${_btnIcon('<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>')} Documentos</button>
@@ -2640,12 +2778,9 @@ function fmtDate(d){
 // ============================================================
 // DOCUMENTS
 // ============================================================
-function renderDocuments(clientId){
-  const clients = DB.get('ap_clients')||[];
-  const c = clients.find(x=>x.id===clientId);
-  if(!c){ navigate('dashboard'); return; }
-  const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
-  const docs = (c.tipo==='fisica' ? [
+// Documentos que aplican a este cliente (según tipo de persona, forma de pago y vehículo).
+function _docsForClient(c){
+  return (c.tipo==='fisica' ? [
     {id:'pedido',     title:'Pedido', desc:'Pedido de vehículo con datos de facturación, usuario y condiciones'},
     {id:'a1',         title:'Formato A1 — Identificación Personas Físicas', desc:'Formato BMW de identificación antilavado para persona física'},
     {id:'amda-pf',    title:'Identificación AMDA — Persona Física', desc:'Formato AMDA oficial de identificación del cliente'},
@@ -2684,6 +2819,14 @@ function renderDocuments(clientId){
     if(d.id==='checklist-motorrad') return c.vehiculoTipo==='moto';
     return true;
   });
+}
+
+function renderDocuments(clientId){
+  const clients = DB.get('ap_clients')||[];
+  const c = clients.find(x=>x.id===clientId);
+  if(!c){ navigate('dashboard'); return; }
+  const name = c.tipo==='fisica'?`${c.nombres} ${c.apellidoPaterno} ${c.apellidoMaterno}`:c.razonSocial;
+  const docs = _docsForClient(c);
 
   const hiddenKey = `ap_hidden_${clientId}`;
   const hidden = DB.get(hiddenKey)||[];
@@ -2713,7 +2856,7 @@ function renderDocuments(clientId){
         <div class="doc-select"><input type="checkbox" id="chk-${d.id}" value="${d.id}"><label for="chk-${d.id}">Seleccionar</label></div>
         <div class="doc-card-header">
           <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-          <div><div class="doc-title">${d.title}</div><div class="doc-desc">${d.desc}</div></div>
+          <div><div class="doc-title">${d.title}</div><div class="doc-desc">${d.desc}</div>${_docMissingHtml(d.id,c)}</div>
         </div>
         <div class="doc-actions">
           <button class="btn btn-secondary btn-sm" onclick="runAsync(this,'Cargando...',()=>previewDoc('${d.id}','${clientId}'))">${_btnIcon('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>')} Vista Previa</button>
@@ -2779,6 +2922,7 @@ async function previewDoc(docId, clientId){
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal-overlay').classList.add('open');
   _modalPrintContext = { clientId, docIds: [docId] };
+  _setModalWarning([docId], c);
   // increment count
   const _dm1=DB.get('ap_docs_count')||{}; _dm1[currentUser.id]=(_dm1[currentUser.id]||0)+1; DB.set('ap_docs_count',_dm1);
 }
@@ -2867,6 +3011,7 @@ async function printSelected(clientId){
   document.getElementById('modal-overlay').classList.add('open');
   const _dm2=DB.get('ap_docs_count')||{}; _dm2[currentUser.id]=(_dm2[currentUser.id]||0)+checkboxes.length; DB.set('ap_docs_count',_dm2);
   const selectedIds = Array.from(checkboxes).map(cb=>cb.value);
+  _setModalWarning(selectedIds, c);
   // Se marcan como impresos hasta que printModal() confirme que la ventana
   // realmente se envió a imprimir, no al solo mostrar la vista previa.
   _modalPrintContext = { clientId, docIds: selectedIds };
@@ -4958,6 +5103,17 @@ document.addEventListener('click', e=>{
 // sola vez al entrar; las anteriores siguen disponibles en Configuración.
 const NOVEDADES = [
   {
+    version: '2026-10-29-2',
+    fecha: '29 de octubre de 2026',
+    titulo: 'Novedades del portal',
+    items: [
+      { t: 'La CURP llena datos sola', d: 'Al capturar la CURP completa, el portal llena la fecha de nacimiento y sugiere el inicio del RFC; solo falta la homoclave.' },
+      { t: 'Aviso de datos faltantes', d: 'Cada formato te avisa si falta algún dato (VIN, precio, fecha de salida…) y te lleva a completarlo antes de imprimir.' },
+      { t: 'Avance de documentos', d: 'Cada cliente muestra cuántos documentos lleva impresos, por ejemplo 7/12.' },
+      { t: 'Búsqueda más completa', d: 'Ahora puedes buscar clientes por VIN, placas, número de factura o inventario, sin importar acentos ni mayúsculas.' }
+    ]
+  },
+  {
     version: '2026-10-29',
     fecha: '29 de octubre de 2026',
     titulo: 'Novedades del portal',
@@ -4996,10 +5152,11 @@ function openNovedades(){
         <button class="modal-close" onclick="closeNovedades()" aria-label="Cerrar ventana">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="novedades-meta">${isNew ? '<span class="novedades-badge">Nuevo</span> ' : ''}${n.fecha}</div>
-        <ul class="novedades-list">
-          ${n.items.map(i=>`<li><h3 class="novedades-item-title">${i.t}</h3><p class="novedades-item-text">${i.d}</p></li>`).join('')}
-        </ul>
+        ${NOVEDADES.map((e,idx)=>`
+          <div class="novedades-meta">${idx===0 ? (isNew ? '<span class="novedades-badge">Nuevo</span> ' : '') + e.fecha : 'Anteriores · ' + e.fecha}</div>
+          <ul class="novedades-list">
+            ${e.items.map(i=>`<li><h3 class="novedades-item-title">${i.t}</h3><p class="novedades-item-text">${i.d}</p></li>`).join('')}
+          </ul>`).join('')}
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="closeNovedades()">Entendido</button>
