@@ -1787,7 +1787,10 @@ function exportAllClientsExcel(){
 function renderClientForm(clientId){
   const client = clientId ? (DB.get('ap_clients')||[]).find(c=>c.id===clientId) : null;
   const isEdit = !!client;
-  if(client) activeTipo = client.tipo;
+  // Un cliente nuevo siempre abre en Persona Física; antes heredaba el último
+  // tipo usado (p. ej. tras editar una persona moral). Si hay un borrador
+  // guardado, se restaura después con su propio tipo.
+  activeTipo = client ? client.tipo : 'fisica';
   _clientFormDirty = false;
 
   document.getElementById('app-content').innerHTML = `
